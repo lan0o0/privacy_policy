@@ -240,7 +240,7 @@ tr.row-bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
   <aside class="side">
     <div class="side-brand">
       <svg width="38" height="38" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" fill="#B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="#F6F4EC" font-family="Noto Serif SC,serif" font-weight="900">隐</text></svg>
-      <div><div class="t">隐私政策管理台</div><div class="e">PRIVACY REGISTRY</div></div>
+      <div><div class="t">隐私政策管理台</div><div class="e">AGREEMENT REGISTRY</div></div>
     </div>
     <nav>
       <div class="nav-item" data-go="#/overview" id="nav-overview"><span data-ic="grid"></span>概览</div>
@@ -251,7 +251,7 @@ tr.row-bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
     <div class="side-foot">
       <div class="clock"><span data-ic="clock"></span><span id="clock">—</span></div>
       <div class="lockbtn" data-act="lock"><span data-ic="lock"></span>锁定管理台</div>
-      <div class="ver">V1.0 · STATIC BUILD</div>
+      <div class="ver">V1.1 · STATIC BUILD</div>
     </div>
   </aside>
   <main class="main"><div id="view" class="view"></div></main>
@@ -315,10 +315,32 @@ function paintIcons(root){(root||document).querySelectorAll('[data-ic]').forEach
 
 /* ================= 存储 ================= */
 const DB_KEY='ppm.db.v1', AUTH_KEY='ppm.auth.v1';
+/* 协议类型：隐私政策 / 用户协议 / 会员服务协议（可扩展） */
+const DOCS=[
+  {key:'privacy',label:'隐私政策',short:'隐私',file:'privacy.html',hint:'https://example.com/privacy.html'},
+  {key:'user',label:'用户协议',short:'用户',file:'user-agreement.html',hint:'https://example.com/user-agreement.html'},
+  {key:'member',label:'会员服务协议',short:'会员',file:'membership.html',hint:'https://example.com/membership.html'}];
+const docMeta=k=>DOCS.find(d=>d.key===k)||DOCS[0];
+const docLabel=k=>docMeta(k).label;
 let db=null;
+function migrateDb(){
+  let legacy=false;
+  for(const a of db.apps){
+    if(!a.urls)a.urls={privacy:a.url||'',user:'',member:''};
+    else a.urls={privacy:a.urls.privacy||'',user:a.urls.user||'',member:a.urls.member||''};
+    if('url' in a)delete a.url;
+    const lc=a.lastCheck;
+    if(lc&&(lc.ok!==undefined||lc.at!==undefined)){ // 旧版单链接结构
+      const old=(lc.ok!==undefined)?{at:lc.at,ok:lc.ok,status:lc.status,via:lc.via}:null;
+      a.lastCheck={privacy:old,user:null,member:null};}
+    else if(!a.lastCheck)a.lastCheck={privacy:null,user:null,member:null};
+    else a.lastCheck={privacy:a.lastCheck.privacy||null,user:a.lastCheck.user||null,member:a.lastCheck.member||null};}
+  for(const s of db.snapshots){if(!s.docType){s.docType='privacy';legacy=true;}}
+  if(legacy)db._chainLegacy=true;} // 旧链哈希公式不同，需重建
 function loadDb(){try{db=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){db=null}
   if(!db||typeof db!=='object')db={settings:{domain:'',intervalMin:30},apps:[],snapshots:[],activity:[],lastCheckAt:0};
-  db.settings=db.settings||{domain:'',intervalMin:30};db.apps=db.apps||[];db.snapshots=db.snapshots||[];db.activity=db.activity||[];}
+  db.settings=db.settings||{domain:'',intervalMin:30};db.apps=db.apps||[];db.snapshots=db.snapshots||[];db.activity=db.activity||[];
+  migrateDb();}
 function saveDb(){try{localStorage.setItem(DB_KEY,JSON.stringify(db))}catch(e){toast('本地存储空间不足，请删除部分历史快照后重试','err')}}
 function logAct(type,text){db.activity.unshift({at:Date.now(),type,text});db.activity=db.activity.slice(0,300);}
 function getAuth(){try{return JSON.parse(localStorage.getItem(AUTH_KEY))}catch(e){return null}}
@@ -462,51 +484,68 @@ async function proxyFetch(url){for(const p of PROXIES){try{const r=await fetch(p
 
 const checking=new Set();
 async function checkApp(app,silent){
-  if(checking.has(app.id))return app.lastCheck;checking.add(app.id);setStatusCell(app.id,'checking');
-  let res=null;
+  if(checking.has(app.id))return {okc:0,badc:0};checking.add(app.id);setStatusCell(app.id,'checking');
+  let okc=0,badc=0;
   try{
-    try{const r=await fetch(app.url,{mode:'cors',cache:'no-store',signal:T(13000)});
-      res={ok:r.ok,status:r.status,via:'direct'};
-      if(r.ok){const t=await r.text();if(await maybeSnapshot(app,t)&&!silent)toast(`「${app.name}」在线内容已变更，自动生成新快照`);}}catch(e){}
-    if(!res){try{await fetch(app.url,{mode:'no-cors',cache:'no-store',signal:T(13000)});res={ok:true,status:0,via:'opaque'};}catch(e){}}
-    if(!res){const p=await proxyFetch(app.url);if(p)res={ok:p.ok,status:p.status,via:'proxy'};
-      if(p&&p.ok&&p.text&&/<[a-z!]/i.test(p.text)){if(await maybeSnapshot(app,p.text)&&!silent)toast(`「${app.name}」在线内容已变更，自动生成新快照`);}}
-    if(!res)res={ok:false,status:0,via:'none'};
+    const jobs=DOCS.map(async d=>{ // 三类协议并行检测
+      const url=app.urls[d.key];
+      if(!url){app.lastCheck[d.key]=null;return;}
+      app.lastCheck[d.key]=await checkUrl(app,url,d.key,silent);
+      app.lastCheck[d.key].ok?okc++:badc++;});
+    await Promise.all(jobs);
   }finally{checking.delete(app.id);}
-  app.lastCheck={at:Date.now(),ok:res.ok,status:res.status,via:res.via};
   saveDb();setStatusCell(app.id);updateBadg();
-  return app.lastCheck;}
+  return {okc,badc};}
+async function checkUrl(app,url,doc,silent){
+  let res=null;
+  try{const r=await fetch(url,{mode:'cors',cache:'no-store',signal:T(13000)});
+    res={ok:r.ok,status:r.status,via:'direct'};
+    if(r.ok){const t=await r.text();if(await maybeSnapshot(app,t,doc)&&!silent)toast(`「${app.name}」${docLabel(doc)}在线内容已变更，自动生成新快照`);}}catch(e){}
+  if(!res){const p=await proxyFetch(url);if(p)res={ok:p.ok,status:p.status,via:'proxy'};
+    if(p&&p.ok&&p.text&&/<[a-z!]/i.test(p.text)){if(await maybeSnapshot(app,p.text,doc)&&!silent)toast(`「${app.name}」${docLabel(doc)}在线内容已变更，自动生成新快照`);}}
+  if(!res){try{await fetch(url,{mode:'no-cors',cache:'no-store',signal:T(13000)});res={ok:true,status:0,via:'opaque'};}catch(e){}} // 跨域兜底：只能确认"可达"，无法读取状态码
+  if(!res)res={ok:false,status:0,via:'none'};
+  return {at:Date.now(),ok:res.ok,status:res.status,via:res.via};}
 async function checkAll(silent){
-  const apps=[...db.apps];let okc=0,badc=0;
-  for(const a of apps){const r=await checkApp(a,true);r&&r.ok?okc++:badc++;}
+  let okc=0,badc=0;
+  for(const a of db.apps){const r=await checkApp(a,true);okc+=r.okc;badc+=r.badc;}
   db.lastCheckAt=Date.now();saveDb();
-  if(!silent)toast(`检测完成：${okc} 个正常，${badc} 个异常`,badc?'err':'ok');
+  if(!silent)toast(`检测完成：${okc} 个协议链接正常，${badc} 个异常`,badc?'err':'ok');
   if(location.hash.startsWith('#/overview'))render();
   return {okc,badc};}
 function maybeCheckAll(){const iv=(db.settings.intervalMin||30)*60000;
   if(db.apps.length&&Date.now()-(db.lastCheckAt||0)>iv){logAct('check','打开平台自动触发全量链接检测');checkAll(false);}}
 
 /* ================= 快照 ================= */
-const snapsOf=appId=>db.snapshots.filter(s=>s.appId===appId).sort((a,b)=>a.version-b.version);
-const latestSnap=appId=>{const ss=snapsOf(appId);return ss.length?ss[ss.length-1]:null;};
-async function createSnapshot(app,content,source){
-  const last=latestSnap(app.id);const version=(last?last.version:0)+1;
+const snapsOf=(appId,doc)=>db.snapshots.filter(s=>s.appId===appId&&(!doc||s.docType===doc)).sort((a,b)=>a.version-b.version);
+const latestSnap=(appId,doc)=>{const ss=snapsOf(appId,doc);return ss.length?ss[ss.length-1]:null;};
+async function createSnapshot(app,content,source,doc='privacy'){
+  const last=latestSnap(app.id,doc);const version=(last?last.version:0)+1;
   const contentHash=await sha256Hex(content);
-  const chainHash=await sha256Hex((last?last.chainHash:'GENESIS')+'|'+app.id+'|'+version+'|'+Date.now()+'|'+contentHash);
-  db.snapshots.push({id:uid(),appId:app.id,version,at:Date.now(),source,content,contentHash,chainHash,size:new Blob([content]).size});
+  const chainHash=await sha256Hex((last?last.chainHash:'GENESIS')+'|'+app.id+'|'+doc+'|'+version+'|'+Date.now()+'|'+contentHash);
+  db.snapshots.push({id:uid(),appId:app.id,docType:doc,version,at:Date.now(),source,content,contentHash,chainHash,size:new Blob([content]).size});
   app.updatedAt=Date.now();
-  logAct('snapshot',`${source==='upload'?'上传':'在线抓取'}了「${app.name}」的 V${String(version).padStart(3,'0')} 快照`);
+  logAct('snapshot',`${source==='upload'?'上传':'在线抓取'}了「${app.name}」${docLabel(doc)}的 V${String(version).padStart(3,'0')} 快照`);
   saveDb();return version;}
-async function rebuildChain(appId){let prev='GENESIS';
-  for(const s of snapsOf(appId)){s.chainHash=await sha256Hex(prev+'|'+s.appId+'|'+s.version+'|'+s.at+'|'+s.contentHash);prev=s.chainHash;}}
+async function maybeSnapshot(app,content,doc){ // 在线内容与最新快照不一致时自动存档，返回是否生成了新快照
+  if(!content||!/<[a-z!]/i.test(content))return false;
+  const last=latestSnap(app.id,doc);
+  const h=await sha256Hex(content);
+  if(last&&last.contentHash===h)return false;
+  await createSnapshot(app,content,'fetch',doc);
+  return true;}
+async function rebuildChain(appId,doc){let prev='GENESIS';
+  for(const s of snapsOf(appId,doc)){s.chainHash=await sha256Hex(prev+'|'+s.appId+'|'+s.docType+'|'+s.version+'|'+s.at+'|'+s.contentHash);prev=s.chainHash;}}
+async function rebuildAllChains(){for(const a of db.apps)for(const d of DOCS)await rebuildChain(a.id,d.key);}
 async function verifyChains(){const out=[];
-  for(const app of db.apps){const ss=snapsOf(app.id);let ok=true,bad=null,prev='GENESIS';
+  for(const app of db.apps)for(const d of DOCS){const ss=snapsOf(app.id,d.key);if(!ss.length)continue;
+    let ok=true,bad=null,prev='GENESIS';
     for(const s of ss){
       if(await sha256Hex(s.content)!==s.contentHash){ok=false;bad=s;break;}
-      const h=await sha256Hex(prev+'|'+s.appId+'|'+s.version+'|'+s.at+'|'+s.contentHash);
+      const h=await sha256Hex(prev+'|'+s.appId+'|'+s.docType+'|'+s.version+'|'+s.at+'|'+s.contentHash);
       if(h!==s.chainHash){ok=false;bad=s;break;}
       prev=s.chainHash;}
-    out.push({app,ok,bad});}
+    out.push({app,doc:d.key,ok,bad});}
   return out;}
 
 /* ================= TOTP 二次验证门 ================= */
@@ -561,21 +600,25 @@ function confirmDlg({title,body,okText,danger}){
     });});}
 
 /* ================= 状态渲染 ================= */
-function chipHtml(app){
-  const c=app.lastCheck;
-  if(!c)return `<span class="chip chip-unk"><span class="dot"></span>未检测</span>`;
+const appBadLinks=a=>DOCS.filter(d=>a.urls[d.key]&&a.lastCheck?.[d.key]&&!a.lastCheck[d.key].ok);
+const appBad=a=>appBadLinks(a).length>0;
+function chipOne(c,short){ // 单个协议链接的状态 chip
+  if(!c)return `<span class="chip chip-unk"><span class="dot"></span>${short} 未检测</span>`;
   const via={direct:'直连',opaque:'直连(跨域)',proxy:'代理',none:'—'}[c.via]||c.via;
   const t=`检测于 ${fmtT(c.at)} · 通道 ${via}`;
-  if(c.ok)return c.status?`<span class="chip chip-ok" title="${esc(t)}"><span class="dot"></span>HTTP ${c.status}</span>`:`<span class="chip chip-ok" title="${esc(t)}（跨域限制，无法读取状态码）"><span class="dot"></span>可达</span>`;
-  return c.status?`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>HTTP ${c.status} 异常</span>`:`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>不可达</span>`;}
+  if(c.ok)return c.status?`<span class="chip chip-ok" title="${esc(t)}"><span class="dot"></span>${short} HTTP ${c.status}</span>`:`<span class="chip chip-ok" title="${esc(t)}（跨域限制，无法读取状态码）"><span class="dot"></span>${short} 可达</span>`;
+  return c.status?`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>${short} HTTP ${c.status}</span>`:`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>${short} 不可达</span>`;}
+function chipHtml(app){ // 汇总三协议
+  const chips=DOCS.filter(d=>app.urls[d.key]).map(d=>chipOne(app.lastCheck?.[d.key],d.short));
+  return chips.length?chips.join(' '):'<span class="chip chip-unk"><span class="dot"></span>未登记链接</span>';}
 function setStatusCell(appId,mode){
   const app=db.apps.find(a=>a.id===appId);if(!app)return;
   $$(`[data-stcell="${appId}"]`).forEach(td=>{
     td.innerHTML=mode==='checking'?'<span style="color:var(--ink-3);font-size:12px"><span class="spin"></span> 检测中…</span>':chipHtml(app);
-    const tr=td.closest('tr');if(tr)tr.classList.toggle('row-bad',mode!=='checking'&&app.lastCheck&&!app.lastCheck.ok);});
+    const tr=td.closest('tr');if(tr)tr.classList.toggle('row-bad',mode!=='checking'&&appBad(app));});
   const bar=$(`[data-failcell="${appId}"]`);
-  if(bar){const bad=app.lastCheck&&!app.lastCheck.ok;bar.classList.toggle('hide',!bad);}}
-function updateBadg(){const n=db.apps.filter(a=>a.lastCheck&&!a.lastCheck.ok).length;const b=$('#badg-bad');if(b){b.textContent=n;b.classList.toggle('hide',!n);}}
+  if(bar)bar.classList.toggle('hide',!appBad(app));}
+function updateBadg(){const n=db.apps.filter(appBad).length;const b=$('#badg-bad');if(b){b.textContent=n;b.classList.toggle('hide',!n);}}
 
 /* ================= 视图 ================= */
 const pkgChips=a=>{const p=[['Android',a.pkg?.android],['iOS',a.pkg?.ios],['HarmonyOS',a.pkg?.harmony]].filter(x=>x[1]);
@@ -585,7 +628,8 @@ const hashShort=h=>h?h.slice(0,10)+'…':'';
 function statHtml(k,v,sub,bad){return `<div class="stat ${bad?'bad':''}"><div class="k">${k}</div><div class="v">${v}${sub?`<small>${sub}</small>`:''}</div></div>`;}
 
 function vOverview(){
-  const badApps=db.apps.filter(a=>a.lastCheck&&!a.lastCheck.ok);
+  const badApps=db.apps.filter(appBad);
+  const badLinkCount=db.apps.reduce((n,a)=>n+appBadLinks(a).length,0);
   const lastSnap=db.snapshots.length?Math.max(...db.snapshots.map(s=>s.at)):null;
   const acts=db.activity.slice(0,11);
   return `
@@ -593,14 +637,14 @@ function vOverview(){
     <div><h1>概览</h1><div class="sub">上次全量检测：${db.lastCheckAt?ago(db.lastCheckAt):'从未检测'} · 共 ${db.apps.length} 个应用在管</div></div>
     <div class="acts"><button class="btn" data-act="check-all">${ic('refresh',14)}一键检测全部</button><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>
   </div>
-  ${badApps.length?`<div class="panel fail-panel"><h2>${ic('alert',16)}失效链接预警（${badApps.length}）</h2>${badApps.map(a=>`
-    <div class="fail-item"><b>${esc(a.name)}</b><span class="mono" style="color:var(--ink-3)">${esc(a.url)}</span>
-    <span style="margin-left:auto">${chipHtml(a)}</span>
-    <button class="btn btn-sm" data-act="check-app" data-id="${a.id}">重新检测</button></div>`).join('')}</div>`:''}
+  ${badApps.length?`<div class="panel fail-panel"><h2>${ic('alert',16)}失效链接预警（${badLinkCount}）</h2>${badApps.map(a=>appBadLinks(a).map(d=>`
+    <div class="fail-item"><b>${esc(a.name)}</b><span class="chip-tag">${d.label}</span><span class="mono" style="color:var(--ink-3)">${esc(a.urls[d.key])}</span>
+    <span style="margin-left:auto">${chipOne(a.lastCheck[d.key],d.short)}</span>
+    <button class="btn btn-sm" data-act="check-app" data-id="${a.id}">重新检测</button></div>`).join('')).join('')}</div>`:''}
   <div class="stats">
     ${statHtml('应用总数',db.apps.length)}
     ${statHtml('快照总量',db.snapshots.length)}
-    ${statHtml('失效链接',badApps.length,'',!!badApps.length)}
+    ${statHtml('失效链接',badLinkCount,'',!!badLinkCount)}
     ${statHtml('最近快照',lastSnap?`<span style="font-size:20px">${ago(lastSnap)}</span>`:'<span style="font-size:20px;color:var(--ink-3)">暂无</span>')}
   </div>
   <div class="ov-grid">
@@ -619,18 +663,18 @@ function vOverview(){
 function vApps(){
   return `
   <div class="page-head">
-    <div><h1>应用管理</h1><div class="sub">维护各端应用的包名、版本与隐私政策在线链接；失效链接将以红色高亮预警</div></div>
+    <div><h1>应用管理</h1><div class="sub">维护各端应用的包名、版本与协议在线链接（隐私政策 / 用户协议 / 会员服务协议）；失效链接将以红色高亮预警</div></div>
     <div class="acts"><button class="btn" data-act="check-all">${ic('refresh',14)}一键检测全部</button><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>
   </div>
   ${db.apps.length?`
   <div class="tbl-wrap"><table class="lg">
-    <thead><tr><th>应用</th><th>包名 / Bundle ID</th><th>当前版本</th><th>隐私政策链接</th><th>链接状态</th><th>快照</th><th style="text-align:right">操作</th></tr></thead>
+    <thead><tr><th>应用</th><th>包名 / Bundle ID</th><th>当前版本</th><th>协议在线链接</th><th>链接状态</th><th>快照</th><th style="text-align:right">操作</th></tr></thead>
     <tbody>${db.apps.map(a=>`
-      <tr data-open-app="${a.id}" class="${a.lastCheck&&!a.lastCheck.ok?'row-bad':''}">
+      <tr data-open-app="${a.id}" class="${appBad(a)?'row-bad':''}">
         <td><div class="app-name">${esc(a.name)}<small>更新于 ${ago(a.updatedAt||a.createdAt)}</small></div></td>
         <td>${pkgChips(a)}</td>
         <td><span class="chip-tag">${esc(a.version||'—')}</span></td>
-        <td class="url-cell"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.url)}</a></td>
+        <td class="url-cell">${DOCS.filter(d=>a.urls[d.key]).map(d=>`<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><span class="chip-tag" style="flex:none">${d.short}</span><a href="${esc(a.urls[d.key])}" target="_blank" rel="noopener" title="${esc(a.urls[d.key])}">${esc(a.urls[d.key])}</a></div>`).join('')||'<span style="color:var(--ink-3)">—</span>'}</td>
         <td data-stcell="${a.id}">${chipHtml(a)}</td>
         <td><span class="mono" style="color:var(--ink-2)">${snapsOf(a.id).length} 份</span></td>
         <td><div class="row-acts">
@@ -641,35 +685,39 @@ function vApps(){
         </div></td>
       </tr>`).join('')}</tbody>
   </table></div>`:`
-  <div class="empty">${ic('phone',40)}<h3>还没有登记任何应用</h3><p>登记 App 名称、各端包名与隐私政策链接，开始统一管理</p><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>`}`;}
+  <div class="empty">${ic('phone',40)}<h3>还没有登记任何应用</h3><p>登记 App 名称、各端包名与协议链接，开始统一管理</p><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>`}`;}
 
-function vAppDetail(id){
+function vAppDetail(id,docKey){
   const app=db.apps.find(a=>a.id===id);
   if(!app)return `<div class="empty">${ic('alert',36)}<h3>应用不存在或已被删除</h3><p><a href="#/apps">返回应用列表</a></p></div>`;
-  const ss=snapsOf(id).slice().reverse();
-  const pub=db.settings.domain?`${db.settings.domain.replace(/\/+$/,'')}/${slugOf(app)}/privacy.html`:null;
+  const doc=docMeta(docKey).key; // 非法值兜底为 privacy
+  const d=docMeta(doc);
+  const url=app.urls[doc];
+  const ss=snapsOf(id,doc).slice().reverse();
+  const pubPath=db.settings.domain?`${db.settings.domain.replace(/\/+$/,'')}/${slugOf(app)}/${d.file}`:null;
   return `
   <div class="page-head">
     <div>
       <h1><a href="#/apps" class="btn-ghost btn" style="padding:4px 8px">${ic('back',16)}</a>${esc(app.name)} <span class="chip-tag" style="vertical-align:4px">${esc(app.version||'')}</span></h1>
       <div class="sub" style="margin-top:10px">${pkgChips(app)}</div>
-      <div class="sub" style="margin-top:8px">${ic('link',13)} <a href="${esc(app.url)}" target="_blank" rel="noopener" class="mono" style="font-size:12px">${esc(app.url)}</a> &nbsp;${chipHtml(app)}</div>
-      ${pub?`<div class="sub" style="margin-top:6px">${ic('globe',13)} 发布路径 <span class="mono" style="font-size:12px">${esc(pub)}</span> <button class="btn-ghost btn btn-sm" data-act="copy" data-cp="${esc(pub)}">${ic('copy',12)}</button></div>`:''}
+      <div class="sub" style="margin-top:8px">${ic('link',13)} ${url?`<a href="${esc(url)}" target="_blank" rel="noopener" class="mono" style="font-size:12px">${esc(url)}</a>`:'<span style="color:var(--ink-3)">未登记链接</span>'} &nbsp;${chipOne(app.lastCheck?.[doc],d.label)}</div>
+      ${pubPath?`<div class="sub" style="margin-top:6px">${ic('globe',13)} ${d.label}发布路径 <span class="mono" style="font-size:12px">${esc(pubPath)}</span> <button class="btn-ghost btn btn-sm" data-act="copy" data-cp="${esc(pubPath)}">${ic('copy',12)}</button></div>`:''}
     </div>
     <div class="acts">
       <button class="btn" data-act="check-app" data-id="${app.id}">${ic('refresh',14)}检测连通</button>
-      <button class="btn" data-act="upload" data-id="${app.id}">${ic('upload',14)}上传 HTML</button>
-      <button class="btn" data-act="dl-current" data-id="${app.id}">${ic('download',14)}下载当前生效</button>
+      <button class="btn" data-act="upload" data-id="${app.id}" data-doc="${doc}">${ic('upload',14)}上传 ${d.label}</button>
+      <button class="btn" data-act="dl-current" data-id="${app.id}" data-doc="${doc}">${ic('download',14)}下载当前生效</button>
       <button class="btn" data-act="export-app" data-id="${app.id}">${ic('archive',14)}导出历史快照</button>
     </div>
   </div>
+  <div class="tabs" style="margin-bottom:14px">${DOCS.map(x=>`<button class="${x.key===doc?'on':''}" data-doctab="${x.key}">${x.label}<span class="chip-tag" style="margin-left:6px">${snapsOf(id,x.key).length}</span></button>`).join('')}</div>
   <div class="tbl-wrap"><table class="lg" style="min-width:900px">
     <thead><tr><th style="width:36px"></th><th>版本</th><th>抓取时间</th><th>来源</th><th>大小</th><th>内容指纹</th><th style="text-align:right">操作</th></tr></thead>
     <tbody>
     ${ss.length?ss.map(s=>`
       <tr>
         <td><input type="checkbox" data-sel-snap="${s.id}" ${sel.has(s.id)?'checked':''} style="accent-color:var(--navy)"></td>
-        <td><span class="snap-v">V${String(s.version).padStart(3,'0')}</span>${latestSnap(id)?.id===s.id?' <span class="chip chip-ok" style="height:18px;font-size:10px">生效中</span>':''}</td>
+        <td><span class="snap-v">V${String(s.version).padStart(3,'0')}</span>${latestSnap(id,doc)?.id===s.id?' <span class="chip chip-ok" style="height:18px;font-size:10px">生效中</span>':''}</td>
         <td class="mono" style="font-size:12px">${fmtT(s.at)}</td>
         <td>${srcChip(s.source)}</td>
         <td class="mono" style="font-size:12px;color:var(--ink-2)">${fmtSize(s.size)}</td>
@@ -679,31 +727,34 @@ function vAppDetail(id){
           <button class="btn btn-sm" data-act="dl-snap" data-id="${s.id}" title="下载该快照">${ic('download',13)}</button>
           <button class="btn btn-sm btn-danger" data-act="del-snap" data-id="${s.id}" title="删除该快照">${ic('trash',13)}</button>
         </div></td>
-      </tr>`).join(''):`<tr><td colspan="7"><div class="empty" style="border:none;background:transparent">${ic('archive',36)}<h3>暂无快照</h3><p>上传 HTML 文件或检测在线内容变更后，将自动生成第一份快照</p></div></td></tr>`}
+      </tr>`).join(''):`<tr><td colspan="7"><div class="empty" style="border:none;background:transparent">${ic('archive',36)}<h3>暂无${d.label}快照</h3><p>上传 HTML 文件或检测在线内容变更后，将自动生成第一份快照</p></div></td></tr>`}
     </tbody>
   </table></div>
   ${sel.size===2?`<div class="cmpbar"><span>${ic('columns',15)}</span><span class="mono">${[...sel].map(sid=>'V'+String(db.snapshots.find(x=>x.id===sid).version).padStart(3,'0')).join(' ↔ ')}</span><button class="btn btn-sm btn-primary" data-act="compare">对比所选版本</button></div>`:''}`;}
 
-let snapFilterApp='',snapFilterSrc='';
+let snapFilterApp='',snapFilterSrc='',snapFilterDoc='';
 function vSnaps(){
   let list=db.snapshots.slice().sort((a,b)=>b.at-a.at);
   if(snapFilterApp)list=list.filter(s=>s.appId===snapFilterApp);
   if(snapFilterSrc)list=list.filter(s=>s.source===snapFilterSrc);
+  if(snapFilterDoc)list=list.filter(s=>s.docType===snapFilterDoc);
   return `
   <div class="page-head">
     <div><h1>快照库</h1><div class="sub">全部历史快照总览 · 共 ${db.snapshots.length} 份；勾选任意两份可进行版本对比</div></div>
     <div class="acts">
       <select id="flt-app" class="mono" style="width:170px;height:34px"><option value="">全部应用</option>${db.apps.map(a=>`<option value="${a.id}" ${snapFilterApp===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>
+      <select id="flt-doc" style="width:140px;height:34px"><option value="">全部协议</option>${DOCS.map(d=>`<option value="${d.key}" ${snapFilterDoc===d.key?'selected':''}>${d.label}</option>`).join('')}</select>
       <select id="flt-src" style="width:130px;height:34px"><option value="">全部来源</option><option value="upload" ${snapFilterSrc==='upload'?'selected':''}>本地上传</option><option value="fetch" ${snapFilterSrc==='fetch'?'selected':''}>在线抓取</option></select>
     </div>
   </div>
   ${list.length?`
-  <div class="tbl-wrap"><table class="lg" style="min-width:900px">
-    <thead><tr><th style="width:36px"></th><th>应用</th><th>版本</th><th>抓取时间</th><th>来源</th><th>大小</th><th>内容指纹</th><th style="text-align:right">操作</th></tr></thead>
+  <div class="tbl-wrap"><table class="lg" style="min-width:960px">
+    <thead><tr><th style="width:36px"></th><th>应用</th><th>协议</th><th>版本</th><th>抓取时间</th><th>来源</th><th>大小</th><th>内容指纹</th><th style="text-align:right">操作</th></tr></thead>
     <tbody>${list.map(s=>{const a=db.apps.find(x=>x.id===s.appId);return `
       <tr>
         <td><input type="checkbox" data-sel-snap="${s.id}" ${sel.has(s.id)?'checked':''} style="accent-color:var(--navy)"></td>
         <td><div class="app-name">${esc(a?a.name:'（已删除）')}</div></td>
+        <td><span class="chip-tag">${docLabel(s.docType)}</span></td>
         <td><span class="snap-v">V${String(s.version).padStart(3,'0')}</span></td>
         <td class="mono" style="font-size:12px">${fmtT(s.at)}</td>
         <td>${srcChip(s.source)}</td>
@@ -716,7 +767,7 @@ function vSnaps(){
         </div></td>
       </tr>`}).join('')}</tbody>
   </table></div>
-  ${sel.size===2?`<div class="cmpbar"><span>${ic('columns',15)}</span><span class="mono">${[...sel].map(sid=>{const s=db.snapshots.find(x=>x.id===sid);const a=db.apps.find(x=>x.id===s.appId);return (a?a.name:'?')+' V'+String(s.version).padStart(3,'0')}).join(' ↔ ')}</span><button class="btn btn-sm btn-primary" data-act="compare">对比所选版本</button></div>`:''}`
+  ${sel.size===2?`<div class="cmpbar"><span>${ic('columns',15)}</span><span class="mono">${[...sel].map(sid=>{const s=db.snapshots.find(x=>x.id===sid);const a=db.apps.find(x=>x.id===s.appId);return (a?a.name:'?')+' '+docLabel(s.docType)+' V'+String(s.version).padStart(3,'0')}).join(' ↔ ')}</span><button class="btn btn-sm btn-primary" data-act="compare">对比所选版本</button></div>`:''}`
   :`<div class="empty">${ic('archive',40)}<h3>暂无快照</h3><p>在应用管理中上传 HTML 或检测在线内容变更，即可生成快照</p></div>`}`;}
 
 function usageInfo(){const used=new Blob([localStorage.getItem(DB_KEY)||'']).size;const cap=5*1024*1024;return {used,cap,pct:Math.min(100,Math.round(used/cap*100))};}
@@ -728,9 +779,9 @@ function vSettings(){
   <div class="set-grid">
     <div class="panel">
       <h2>${ic('globe',16)}文件存放域名</h2>
-      <div class="field"><label>隐私政策 HTML 的部署根地址</label>
+      <div class="field"><label>协议 HTML 的部署根地址</label>
         <input type="url" id="set-domain" class="mono" placeholder="https://privacy.example.com" value="${esc(dom)}">
-        <div class="hint">上传快照后，系统将按 <span class="mono">域名/应用标识/privacy.html</span> 生成发布路径，并可选同步为该应用的在线链接。</div>
+        <div class="hint">上传快照后，系统将按 <span class="mono">域名/应用标识/协议文件名</span>（privacy.html / user-agreement.html / membership.html）生成发布路径，并可选同步为该应用对应协议的在线链接。<b>上传不会自动改动服务器文件</b>，需自行部署。</div>
         <div style="margin-top:10px"><button class="btn btn-primary btn-sm" data-act="save-domain">保存域名</button></div>
       </div>
     </div>
@@ -766,14 +817,14 @@ function vSettings(){
 
 /* ================= 路由与渲染 ================= */
 const sel=new Set();
-function route(){const h=location.hash||'#/overview';const m=h.match(/^#\/app\/(.+)$/);
-  if(m)return {v:'app-detail',id:m[1]};
+function route(){const h=location.hash||'#/overview';const m=h.match(/^#\/app\/([^/]+)(?:\/([a-z]+))?$/);
+  if(m)return {v:'app-detail',id:m[1],doc:m[2]||'privacy'};
   return {v:({ '#/overview':'overview','#/apps':'apps','#/snaps':'snaps','#/settings':'settings' })[h]||'overview'};}
 function render(){if(!authed())return;
   const r=route();const view=$('#view');
   if(r.v==='overview')view.innerHTML=vOverview();
   else if(r.v==='apps')view.innerHTML=vApps();
-  else if(r.v==='app-detail')view.innerHTML=vAppDetail(r.id);
+  else if(r.v==='app-detail')view.innerHTML=vAppDetail(r.id,r.doc);
   else if(r.v==='snaps')view.innerHTML=vSnaps();
   else view.innerHTML=vSettings();
   ['overview','apps','snaps','settings'].forEach(k=>{const el=$('#nav-'+k);if(el)el.classList.toggle('on',r.v===k||(r.v==='app-detail'&&k==='apps'));});
@@ -791,19 +842,22 @@ function appForm(a){
       <div class="field"><label>iOS Bundle ID</label><input id="af-ios" class="mono" type="text" placeholder="com.example.app" value="${esc(a?.pkg?.ios||'')}"></div>
       <div class="field"><label>HarmonyOS 包名</label><input id="af-harmony" class="mono" type="text" placeholder="com.example.app" value="${esc(a?.pkg?.harmony||'')}"></div>
       <div class="field"><label>当前版本号</label><input id="af-ver" class="mono" type="text" placeholder="1.0.0" value="${esc(a?.version||'')}"></div>
-      <div class="field"><label>隐私政策在线链接 *</label><input id="af-url" class="mono" type="url" placeholder="https://example.com/privacy.html" value="${esc(a?.url||'')}"></div>
+      <div class="field"><label>协议在线链接（隐私政策必填，其余可留空后补充）</label></div>
+      ${DOCS.map(d=>`<div class="field"><label>${d.label}${d.key==='privacy'?' *':''}</label><input id="af-url-${d.key}" class="mono" type="url" placeholder="${d.hint}" value="${esc(a?.urls?.[d.key]||'')}"></div>`).join('')}
       <div class="form-err" id="af-err"></div>
     </div>
     <div class="modal-f"><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="af-save">保存</button></div>`,
   m=>{
     const get=id=>$('#'+id,m).value.trim();
     $('#af-save',m).addEventListener('click',()=>{
-      const name=get('af-name'),url=get('af-url'),err=$('#af-err',m);
+      const name=get('af-name'),err=$('#af-err',m);
+      const urls={};for(const d of DOCS)urls[d.key]=get('af-url-'+d.key);
       if(!name){err.textContent='请填写应用名称';return;}
-      if(!/^https?:\/\/.+/i.test(url)){err.textContent='请填写合法的在线链接（以 http:// 或 https:// 开头）';return;}
+      if(!/^https?:\/\/.+/i.test(urls.privacy)){err.textContent='请填写合法的隐私政策链接（以 http:// 或 https:// 开头）';return;}
+      for(const d of DOCS)if(urls[d.key]&&!/^https?:\/\/.+/i.test(urls[d.key])){err.textContent=`${d.label}链接需以 http:// 或 https:// 开头`;return;}
       const pkg={android:get('af-android'),ios:get('af-ios'),harmony:get('af-harmony')};
-      if(isEdit){Object.assign(a,{name,url,version:get('af-ver'),pkg,updatedAt:Date.now()});logAct('app',`编辑了应用「${name}」`);}
-      else{db.apps.push({id:uid(),name,url,version:get('af-ver'),pkg,createdAt:Date.now(),updatedAt:Date.now(),lastCheck:null});logAct('app',`新建了应用「${name}」`);}
+      if(isEdit){Object.assign(a,{name,version:get('af-ver'),pkg,urls,updatedAt:Date.now()});logAct('app',`编辑了应用「${name}」`);}
+      else{db.apps.push({id:uid(),name,version:get('af-ver'),pkg,urls,createdAt:Date.now(),updatedAt:Date.now(),lastCheck:{privacy:null,user:null,member:null}});logAct('app',`新建了应用「${name}」`);}
       saveDb();closeModal();render();toast(isEdit?'应用已更新':'应用已创建','ok');});
   });}
 function slugOf(a){const s=(a.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return /^[a-z0-9-]{2,}$/.test(s)?s:'app-'+a.id.slice(0,6);}
@@ -815,20 +869,31 @@ const ACT={
   'add-app'(){appForm(null);},
   'edit-app'(d){appForm(db.apps.find(a=>a.id===d.id));},
   async 'check-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;
-    const r=await checkApp(a);toast(r.ok?`「${a.name}」链接正常${r.status?'（HTTP '+r.status+'）':''}`:`「${a.name}」链接异常${r.status?'（HTTP '+r.status+'）':'（不可达）'}`,r.ok?'ok':'err');
-    if(route().v!=='apps')render();},
-  'check-all'(){logAct('check','手动触发全量链接检测');checkAll(false).then(()=>{if(route().v==='apps')render();});},
+    const n=DOCS.filter(x=>a.urls[x.key]).length;
+    if(!n){toast(`「${a.name}」未登记任何协议链接`,'err');return;}
+    const r=await checkApp(a);
+    toast(`「${a.name}」检测完成：${r.okc} 个链接正常${r.badc?`，${r.badc} 个异常`:''}`,r.badc?'err':'ok');
+    render();},
+  'check-all'(){logAct('check','手动触发全量链接检测');checkAll(false).then(()=>{if(route().v==='apps'||route().v==='overview')render();});},
   'upload'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;
-    gate(async()=>{pendingUpload=a.id;$('#file-in').value='';$('#file-in').click();},`上传 HTML · ${a.name}`);},
-  'dl-current'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const s=latestSnap(a.id);
-    if(!s){toast('该应用暂无快照，无法下载','err');return;}
-    gate(()=>{dlFile(`${slugOf(a)}-privacy-v${s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了「${a.name}」当前生效文件 V${s.version}`);saveDb();toast('已开始下载当前生效文件','ok');},`下载当前生效 · ${a.name}`);},
+    const go=doc=>gate(async()=>{pendingUpload={id:a.id,doc};$('#file-in').value='';$('#file-in').click();},`上传 HTML · ${a.name} · ${docLabel(doc)}`);
+    if(d.doc)go(d.doc);
+    else openModal(`
+      <div class="modal-h"><h3>${ic('upload',18)}选择协议类型 · ${esc(a.name)}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-b">
+        <p style="font-size:13px;color:var(--ink-2);margin-bottom:14px">本次上传的 HTML 文件将作为哪类协议的快照存档？</p>
+        ${DOCS.map(x=>`<button class="btn" style="display:flex;width:100%;justify-content:flex-start;margin-bottom:8px" data-pickdoc="${x.key}">${ic('file',14)}${x.label}<span style="margin-left:auto;color:var(--ink-3);font-size:11px" class="mono">${x.file}</span></button>`).join('')}
+      </div>`,
+      m=>{m.querySelectorAll('[data-pickdoc]').forEach(b=>b.addEventListener('click',()=>{closeModal();go(b.dataset.pickdoc);}));});},
+  'dl-current'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const doc=d.doc||route().doc||'privacy';const s=latestSnap(a.id,doc);
+    if(!s){toast(`该应用暂无${docLabel(doc)}快照，无法下载`,'err');return;}
+    gate(()=>{dlFile(`${slugOf(a)}-${doc}-${'v'+s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了「${a.name}」${docLabel(doc)}当前生效文件 V${s.version}`);saveDb();toast('已开始下载当前生效文件','ok');},`下载当前生效 · ${a.name} · ${docLabel(doc)}`);},
   'export-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const ss=snapsOf(a.id);
     if(!ss.length){toast('该应用暂无快照，无法导出','err');return;}
     gate(()=>{dlFile(`${slugOf(a)}-snapshots-${fmtD(Date.now())}.html`,buildArchive(a,ss),'text/html;charset=utf-8');logAct('export',`批量导出了「${a.name}」的 ${ss.length} 份历史快照`);saveDb();toast(`已导出 ${ss.length} 份历史快照`,'ok');},`批量导出快照 · ${a.name}`);},
   'preview-snap'(d){const s=db.snapshots.find(x=>x.id===d.id);if(!s)return;const a=db.apps.find(x=>x.id===s.appId);
     openModal(`
-      <div class="modal-h"><h3>${ic('eye',18)}快照预览 · ${esc(a?a.name:'已删除')} <span class="snap-v" style="margin-left:6px">V${String(s.version).padStart(3,'0')}</span></h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-h"><h3>${ic('eye',18)}快照预览 · ${esc(a?a.name:'已删除')} <span class="chip-tag" style="margin-left:4px">${docLabel(s.docType)}</span> <span class="snap-v" style="margin-left:6px">V${String(s.version).padStart(3,'0')}</span></h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
       <div class="modal-b">
         <div class="cmp-meta" style="margin-bottom:12px">${srcChip(s.source)}<span class="chip-tag">${fmtT(s.at)}</span><span class="chip-tag">${fmtSize(s.size)}</span><span class="chip-tag" title="${s.contentHash}">指纹 ${hashShort(s.contentHash)}</span></div>
         <iframe class="prev-frame" id="pv-frame" sandbox=""></iframe>
@@ -836,7 +901,7 @@ const ACT={
       <div class="modal-f"><span class="left">${ic('shield',13)}预览已禁用脚本运行</span><button class="btn" data-close="1">关闭</button></div>`,
     m=>{$('#pv-frame',m).srcdoc=s.content;}, 'w-lg');},
   'dl-snap'(d){const s=db.snapshots.find(x=>x.id===d.id);if(!s)return;const a=db.apps.find(x=>x.id===s.appId);
-    gate(()=>{dlFile(`${slugOf(a||{name:'app',id:'x'})}-privacy-v${s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了快照 V${s.version}（${a?a.name:'已删除'}）`);saveDb();toast('已开始下载该快照','ok');},`下载快照 V${String(s.version).padStart(3,'0')}`);},
+    gate(()=>{dlFile(`${slugOf(a||{name:'app',id:'x'})}-${s.docType}-v${s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了${docLabel(s.docType)}快照 V${s.version}（${a?a.name:'已删除'}）`);saveDb();toast('已开始下载该快照','ok');},`下载${docLabel(s.docType)}快照 V${String(s.version).padStart(3,'0')}`);},
   async 'del-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const n=snapsOf(a.id).length;
     const ok=await confirmDlg({title:`删除应用「${a.name}」`,danger:true,okText:'我已知晓，删除',
       body:`将永久删除该应用记录${n?`及其 <b style="color:var(--red)">${n} 份历史快照</b>`:''}，此操作不可撤销。`});
@@ -847,8 +912,8 @@ const ACT={
     const ok=await confirmDlg({title:`删除快照 V${String(s.version).padStart(3,'0')}`,danger:true,okText:'删除快照',
       body:`删除「${esc(a?.name||'已删除')}」的快照 <b>V${String(s.version).padStart(3,'0')}</b>？删除后该应用的哈希链将重建，历史版本出现空缺。`});
     if(!ok)return;
-    gate(async()=>{db.snapshots=db.snapshots.filter(x=>x.id!==s.id);await rebuildChain(s.appId);
-      logAct('del',`删除了快照 V${String(s.version).padStart(3,'0')}（${a?a.name:'已删除'}），哈希链已重建`);saveDb();sel.clear();render();toast('快照已删除','ok');},`删除快照 V${String(s.version).padStart(3,'0')}`);},
+    gate(async()=>{db.snapshots=db.snapshots.filter(x=>x.id!==s.id);await rebuildChain(s.appId,s.docType);
+      logAct('del',`删除了${docLabel(s.docType)}快照 V${String(s.version).padStart(3,'0')}（${a?a.name:'已删除'}），哈希链已重建`);saveDb();sel.clear();render();toast('快照已删除','ok');},`删除${docLabel(s.docType)}快照 V${String(s.version).padStart(3,'0')}`);},
   'compare'(){if(sel.size!==2)return;const [x,y]=db.snapshots.filter(s=>sel.has(s.id));if(!x||!y)return;openCompare(x,y);},
   'copy'(d){if(d.cp)copyText(d.cp);},
   'save-domain'(){const v=$('#set-domain').value.trim();
@@ -862,7 +927,7 @@ const ACT={
     openModal(`
       <div class="modal-h"><h3>${ic('shield',18)}快照链完整性校验</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
       <div class="modal-b">
-        ${res.length?res.map(x=>`<div class="kv"><span class="k">${esc(x.app.name)} · ${snapsOf(x.app.id).length} 份快照</span>
+        ${res.length?res.map(x=>`<div class="kv"><span class="k">${esc(x.app.name)} · ${docLabel(x.doc)} · ${snapsOf(x.app.id,x.doc).length} 份快照</span>
           ${x.ok?`<span class="chip chip-ok">${ic('check',12)}完整</span>`:`<span class="chip chip-bad" title="首个异常版本 V${x.bad.version}">V${String(x.bad.version).padStart(3,'0')} 起校验失败</span>`}</div>`).join(''):'<div style="color:var(--ink-3)">暂无快照可校验</div>'}
         <div class="note" style="margin-top:16px">每份快照含内容指纹与链式哈希（SHA-256），任一内容或顺序被改动都会导致其后所有版本校验失败。</div>
       </div>
@@ -940,8 +1005,8 @@ function openCompare(x,y){
 
 /* ================= 批量导出档案 ================= */
 function buildArchive(app,ss){
-  const payload={app:{name:app.name,version:app.version,url:app.url},exportedAt:Date.now(),
-    snaps:ss.map(s=>({version:s.version,at:s.at,source:s.source,size:s.size,contentHash:s.contentHash,content:s.content}))};
+  const payload={app:{name:app.name,version:app.version,urls:app.urls},exportedAt:Date.now(),
+    snaps:ss.map(s=>({docType:s.docType,version:s.version,at:s.at,source:s.source,size:s.size,contentHash:s.contentHash,content:s.content}))};
   const json=JSON.stringify(payload).replace(/<\//g,'<\\/');
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>快照档案 · ${esc(app.name)}</title>
 <style>body{font-family:'Noto Sans SC',system-ui,sans-serif;margin:0;background:#F5F3EC;color:#1C2740}
@@ -949,15 +1014,16 @@ header{background:#152239;color:#F2F0E8;padding:22px 30px}header h1{margin:0;fon
 .wrap{display:flex;height:calc(100vh - 92px)}aside{width:290px;overflow:auto;border-right:1px solid #E5E0D2;background:#fff}
 .item{padding:14px 18px;border-bottom:1px solid #E5E0D2;cursor:pointer;font-size:13px}.item:hover{background:#FAF8F2}.item.on{background:#FAF8F2;border-left:3px solid #B98A2F}
 .item b{font-family:monospace;color:#1F3A66}.item span{display:block;color:#8B94A7;font-size:11px;margin-top:3px;font-family:monospace}
+.item .dt{display:inline-block;background:#EDF1F7;color:#1F3A66;border-radius:4px;padding:0 6px;font-size:11px;margin-left:6px}
 main{flex:1;padding:18px}iframe{width:100%;height:100%;border:1px solid #E5E0D2;border-radius:9px;background:#fff}
 .v{font-family:monospace;font-weight:600;color:#1F3A66;background:#F5EBD4;border:1px solid #E8D9B0;border-radius:5px;padding:1px 7px;font-size:12px}
 @media(max-width:760px){.wrap{flex-direction:column;height:auto}aside{width:100%}main{height:80vh}}</style></head><body>
-<header><h1>${esc(app.name)} · 隐私政策快照档案</h1><p>${ss.length} SNAPSHOTS · EXPORTED ${fmtT(Date.now())} · PRIVACY POLICY REGISTRY</p></header>
+<header><h1>${esc(app.name)} · 协议快照档案</h1><p>${ss.length} SNAPSHOTS · EXPORTED ${fmtT(Date.now())} · AGREEMENT REGISTRY</p></header>
 <div class="wrap"><aside id="list"></aside><main><iframe id="fr" sandbox=""></iframe></main></div>
 <script type="application/json" id="data">${json}<\/script>
 <script>const D=JSON.parse(document.getElementById('data').textContent);const L=document.getElementById('list');
 D.snaps.slice().reverse().forEach((s,i)=>{const d=document.createElement('div');d.className='item'+(i===0?' on':'');
-d.innerHTML='<b class="v">V'+String(s.version).padStart(3,'0')+'</b> '+(s.source==='upload'?'本地上传':'在线抓取')+'<span>'+new Date(s.at).toLocaleString('zh-CN')+' · '+(s.size/1024).toFixed(1)+' KB</span>';
+d.innerHTML='<b class="v">V'+String(s.version).padStart(3,'0')+'</b><span class="dt">'+(s.docType==='user'?'用户协议':s.docType==='member'?'会员服务协议':'隐私政策')+'</span> '+(s.source==='upload'?'本地上传':'在线抓取')+'<span>'+new Date(s.at).toLocaleString('zh-CN')+' · '+(s.size/1024).toFixed(1)+' KB</span>';
 d.onclick=()=>{document.querySelectorAll('.item').forEach(x=>x.classList.remove('on'));d.classList.add('on');document.getElementById('fr').srcdoc=s.content;};L.appendChild(d);});
 document.getElementById('fr').srcdoc=D.snaps[D.snaps.length-1].content;<\/script></body></html>`;}
 
@@ -1031,7 +1097,7 @@ function renderLogin(){
       <svg width="44" height="44" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="#F6F4EC" font-family="Noto Serif SC,serif" font-weight="900">隐</text></svg>
       <div><h1>隐私政策管理台</h1><div class="en">PRIVACY POLICY REGISTRY</div></div>
     </div>
-    <p class="gate-sub">统一维护各端隐私政策 · 快照留存 · 版本追溯</p>
+    <p class="gate-sub">统一维护各端协议文本（隐私 / 用户 / 会员） · 快照留存 · 版本追溯</p>
     <form id="login-f">
       <div class="field"><label>管理密码</label><input id="lg-pass" type="password" autocomplete="current-password" autofocus placeholder="请输入管理密码"></div>
       <div class="form-err" id="lg-err"></div>
@@ -1102,6 +1168,7 @@ function renderWizard(){
 function enterApp(actText){
   $('#gate').classList.add('hide');$('#shell').classList.remove('hide');
   logAct('safe',actText);saveDb();
+  if(db._chainLegacy){rebuildAllChains().then(()=>{delete db._chainLegacy;saveDb();});} // 旧版哈希公式迁移：按新公式（含协议类型）重建全部链
   render();maybeCheckAll();}
 
 /* ================= 事件绑定 ================= */
@@ -1111,6 +1178,8 @@ document.addEventListener('click',e=>{
   if(act){const fn=ACT[act.dataset.act];if(fn){e.stopPropagation();fn(act.dataset);return;}}
   const go=e.target.closest('[data-go]');
   if(go){nav(go.dataset.go);return;}
+  const tab=e.target.closest('[data-doctab]');
+  if(tab){const r=route();nav(`#/app/${r.id}/${tab.dataset.doctab}`);return;}
   const open=e.target.closest('[data-open-app]');
   if(open){nav('#/app/'+open.dataset.openApp);return;}});
 document.addEventListener('change',e=>{
@@ -1122,35 +1191,39 @@ document.addEventListener('change',e=>{
   if(e.target.id==='file-in'&&e.target.files.length)handleUpload(e.target.files[0]);
   if(e.target.id==='imp-in'&&e.target.files.length)handleImport(e.target.files[0]);
   if(e.target.id==='flt-app'){snapFilterApp=e.target.value;sel.clear();render();}
+  if(e.target.id==='flt-doc'){snapFilterDoc=e.target.value;sel.clear();render();}
   if(e.target.id==='flt-src'){snapFilterSrc=e.target.value;sel.clear();render();}});
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&document.activeElement&&document.activeElement.classList.contains('totp-input')){
     const m=document.activeElement.closest('.mask');
     const btn=m&&m.querySelector('#gate-ok,#wz-done,#rb-next');if(btn)btn.click();}});
 async function handleUpload(file){
-  const app=db.apps.find(a=>a.id===pendingUpload);pendingUpload=null;
+  const pu=pendingUpload||{};pendingUpload=null;
+  const app=db.apps.find(a=>a.id===pu.id);
+  const doc=docMeta(pu.doc).key;
   if(!app){toast('上传会话已失效，请重试','err');return;}
   if(!/\.html?$/i.test(file.name)){toast('仅支持 .html / .htm 文件','err');return;}
   const content=await file.text();
   if(!content.trim()){toast('文件内容为空','err');return;}
-  const v=await createSnapshot(app,content,'upload');
-  toast(`已上传并生成快照 V${String(v).padStart(3,'0')}`,'ok');
+  const v=await createSnapshot(app,content,'upload',doc);
+  toast(`已上传${docLabel(doc)}快照 V${String(v).padStart(3,'0')}`,'ok');
   const dom=db.settings.domain;
-  if(dom){const pub=`${dom.replace(/\/+$/,'')}/${slugOf(app)}/privacy.html`;
+  if(dom){const pub=`${dom.replace(/\/+$/,'')}/${slugOf(app)}/${docMeta(doc).file}`;
     openModal(`
-      <div class="modal-h"><h3>${ic('upload',18)}上传成功 · 快照 V${String(v).padStart(3,'0')}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-h"><h3>${ic('upload',18)}上传成功 · ${docLabel(doc)}快照 V${String(v).padStart(3,'0')}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
       <div class="modal-b">
-        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.9">快照已存档。请将此 HTML 文件部署到自定义域名路径，使线上内容与存档一致：</p>
+        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.9">快照已存档。<b>上传本身不会改动线上网页</b>——如需让线上生效，请将此 HTML 文件下载并部署到下列自定义域名路径，使线上内容与存档一致：</p>
         <div class="secret-key" style="cursor:copy" id="pub-path" title="点击复制">${esc(pub)}</div>
+        <div class="note" style="margin-top:10px">提示：该路径为建议的发布位置。若尚未在服务器上部署此文件，直接访问将返回 404，属正常现象；部署完成后即可正常打开。</div>
         <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:14px;cursor:pointer">
-          <input type="checkbox" id="pub-upd" checked style="accent-color:var(--navy)">同时将该应用的在线链接更新为上述发布路径
+          <input type="checkbox" id="pub-upd" checked style="accent-color:var(--navy)">同时将该应用的${docLabel(doc)}在线链接更新为上述发布路径
         </label>
       </div>
       <div class="modal-f"><button class="btn" data-close="1">稍后部署</button><button class="btn btn-primary" id="pub-ok">保存</button></div>`,
     m=>{
       $('#pub-path',m).addEventListener('click',()=>copyText(pub));
       $('#pub-ok',m).addEventListener('click',()=>{
-        if($('#pub-upd',m).checked){app.url=pub;logAct('set',`「${app.name}」在线链接已更新为发布路径`);}
+        if($('#pub-upd',m).checked){app.urls[doc]=pub;logAct('set',`「${app.name}」${docLabel(doc)}在线链接已更新为发布路径`);}
         saveDb();closeModal();render();toast('已完成','ok');});});}
   else render();}
 async function handleImport(file){
