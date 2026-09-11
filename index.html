@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>隐私政策管理台</title>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="%23B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="%23F6F4EC" font-family="serif" font-weight="900">隐</text></svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F5F3EC; --panel:#FFFFFF; --panel-2:#FAF8F2;
+  --ink:#1C2740; --ink-2:#5A6478; --ink-3:#8B94A7;
+  --line:#E5E0D2; --line-2:#D8D2C1;
+  --navy:#1F3A66; --navy-2:#2C4E85;
+  --side:#152239; --side-tx:#C7D1E3;
+  --gold:#B98A2F; --gold-soft:#F5EBD4;
+  --red:#B23B2E; --red-soft:#F8E9E5; --red-line:#E2C3BC;
+  --green:#2E7D52; --green-soft:#E5F1EA; --green-line:#BFDDCB;
+  --amber:#9A6B1F; --amber-soft:#F6EDD8; --amber-line:#E4D2AC;
+  --serif:'Noto Serif SC',Georgia,'Songti SC','SimSun',serif;
+  --sans:'Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--navy)}
+::selection{background:var(--gold-soft)}
+.hide{display:none!important}
+.ic{vertical-align:-2px;flex:none}
+button{font-family:inherit}
+
+/* ---------- 通用组件 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 14px;border-radius:7px;border:1px solid var(--line-2);background:#fff;color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none}
+.btn:hover{border-color:var(--navy);color:var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-2);color:#fff}
+.btn-danger{color:var(--red);border-color:var(--red-line)}
+.btn-danger:hover{background:var(--red);border-color:var(--red);color:#fff}
+.btn-sm{height:27px;padding:0 10px;font-size:12px;border-radius:6px}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn-ghost:hover{background:rgba(31,58,102,.08);color:var(--navy);border-color:transparent}
+.btn-block{width:100%;height:40px}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;border-radius:4px;font-size:11.5px;font-weight:600;border:1px solid;white-space:nowrap;cursor:default}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip-ok{color:var(--green);border-color:var(--green-line);background:var(--green-soft)}
+.chip-bad{color:var(--red);border-color:var(--red-line);background:var(--red-soft)}
+.chip-unk{color:var(--ink-3);border-color:var(--line-2);background:#F2EFE6}
+.chip-warn{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.chip-tag{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.mono{font-family:var(--mono);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
+.field .hint{font-size:11.5px;color:var(--ink-3);margin-top:5px;line-height:1.5}
+.field .hint a{color:var(--navy)}
+input[type=text],input[type=password],input[type=url],input[type=number],select,textarea{width:100%;height:38px;padding:0 12px;border:1px solid var(--line-2);border-radius:7px;background:#fff;font-size:13.5px;font-family:inherit;color:var(--ink);transition:border .15s, box-shadow .15s}
+textarea{height:auto;padding:10px 12px}
+input.mono,select.mono{font-family:var(--mono);font-size:12.5px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(31,58,102,.12)}
+input.err,textarea.err{border-color:var(--red);box-shadow:0 0 0 3px rgba(178,59,46,.1)}
+.form-err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:10px}
+.empty{border:1.5px dashed var(--line-2);border-radius:12px;padding:52px 24px;text-align:center;color:var(--ink-2);background:rgba(255,255,255,.55)}
+.empty .ic{opacity:.4}
+.empty h3{font-family:var(--serif);font-size:17px;color:var(--ink);margin:14px 0 6px}
+.empty p{font-size:13px;color:var(--ink-2);margin-bottom:18px}
+.sep{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+/* ---------- 登录 / 初始化 ---------- */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:repeating-linear-gradient(0deg,transparent 0 31px,rgba(28,39,64,.045) 31px 32px),repeating-linear-gradient(90deg,transparent 0 31px,rgba(28,39,64,.03) 31px 32px),var(--paper)}
+.gate-card{width:430px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:16px;padding:38px 38px 30px;box-shadow:0 30px 70px -34px rgba(21,34,57,.45);animation:up .3s ease}
+.gate-brand{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.gate-brand h1{font-family:var(--serif);font-size:23px;font-weight:900;letter-spacing:1px}
+.gate-brand .en{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--ink-3);margin-top:2px}
+.gate-sub{font-size:13px;color:var(--ink-2);margin:14px 0 26px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.steps{display:flex;gap:8px;margin-bottom:24px}
+.steps span{flex:1;text-align:center;font-size:11.5px;color:var(--ink-3);padding-bottom:8px;border-bottom:2px solid var(--line)}
+.steps span.on{color:var(--navy);border-color:var(--gold);font-weight:600}
+.qr-box{display:flex;gap:22px;align-items:center;justify-content:center;padding:18px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.qr-box .img{background:#fff;padding:10px;border:1px solid var(--line);border-radius:8px}
+.qr-box img,.qr-box canvas{display:block}
+.qr-fallback{width:150px;font-family:var(--mono);font-size:10.5px;color:var(--ink-2);word-break:break-all;line-height:1.6}
+.secret-key{font-family:var(--mono);font-size:14px;letter-spacing:2.5px;background:var(--panel-2);border:1px dashed var(--line-2);border-radius:8px;padding:12px 14px;text-align:center;user-select:all;margin:10px 0}
+.totp-input{font-family:var(--mono);font-size:24px !important;letter-spacing:14px;text-align:center;height:52px;font-weight:600}
+.gate-note{font-size:11.5px;color:var(--ink-3);line-height:1.7;margin-top:22px;padding-top:16px;border-top:1px dashed var(--line)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.shake{animation:shake .3s}
+
+/* ---------- 主框架 ---------- */
+.shell{display:flex;min-height:100vh}
+.side{width:238px;flex:none;background:var(--side);color:var(--side-tx);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.side-brand{display:flex;align-items:center;gap:11px;padding:22px 20px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.side-brand .t{font-family:var(--serif);font-size:16.5px;font-weight:700;color:#F2F0E8;letter-spacing:1px;line-height:1.3}
+.side-brand .e{font-family:var(--mono);font-size:8.5px;letter-spacing:2.5px;color:rgba(199,209,227,.5);margin-top:2px}
+.side nav{padding:14px 12px;flex:1}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10.5px 13px;border-radius:8px;color:var(--side-tx);font-size:13.5px;cursor:pointer;margin-bottom:3px;border-left:3px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.on{background:rgba(255,255,255,.09);color:#fff;border-left-color:var(--gold)}
+.nav-item .bdg{margin-left:auto;font-family:var(--mono);font-size:10.5px;background:rgba(178,59,46,.9);color:#fff;border-radius:9px;padding:0 7px;height:17px;line-height:17px}
+.side-foot{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:11.5px}
+.side-foot .clock{font-family:var(--mono);color:#F2F0E8;font-size:12.5px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.side-foot .lockbtn{display:flex;align-items:center;gap:7px;color:var(--side-tx);cursor:pointer;font-size:12.5px}
+.side-foot .lockbtn:hover{color:#fff}
+.side-foot .ver{margin-top:12px;color:rgba(199,209,227,.4);font-family:var(--mono);font-size:10px;letter-spacing:1px}
+.main{flex:1;min-width:0;padding:30px 36px 60px;max-width:1220px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.page-head h1{font-family:var(--serif);font-size:26px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:12px}
+.page-head .sub{color:var(--ink-2);font-size:13px;margin-top:7px}
+.page-head .acts{display:flex;gap:10px;flex-wrap:wrap}
+.view{animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- 统计条 / 表格 ---------- */
+.stats{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:22px;flex-wrap:wrap}
+.stat{flex:1;min-width:150px;padding:18px 24px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:none}
+.stat .k{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.stat .v{font-family:var(--serif);font-size:31px;font-weight:700;margin-top:5px;line-height:1.1}
+.stat .v small{font-family:var(--mono);font-size:12px;color:var(--ink-2);font-weight:400;margin-left:6px}
+.stat.bad .v{color:var(--red)}
+.tbl-wrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto}
+table.lg{width:100%;border-collapse:collapse;min-width:760px}
+.lg th{font-size:12px;color:var(--ink-2);font-weight:600;text-align:left;padding:11px 16px;background:var(--panel-2);border-bottom:1px solid var(--line);white-space:nowrap}
+.lg td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+.lg tbody tr:last-child td{border-bottom:none}
+.lg tbody tr[data-open]{cursor:pointer;transition:background .12s}
+.lg tbody tr[data-open]:hover{background:var(--panel-2)}
+tr.row-bad{background:linear-gradient(90deg,rgba(178,59,46,.07),transparent 32%)}
+tr.row-bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.app-name{font-weight:600;font-size:14px}
+.app-name small{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400;margin-top:2px}
+.url-cell{max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.url-cell a{text-decoration:none;font-family:var(--mono);font-size:11.5px}
+.url-cell a:hover{text-decoration:underline}
+.row-acts{display:flex;gap:6px;justify-content:flex-end}
+.snap-v{font-family:var(--mono);font-weight:600;color:var(--navy);background:var(--gold-soft);border:1px solid #E8D9B0;border-radius:5px;padding:2px 8px;font-size:12px}
+.src-chip{font-size:11px;border-radius:4px;padding:2px 8px;border:1px solid;white-space:nowrap}
+.src-up{color:var(--navy);border-color:#C9D6EC;background:#EDF2FA}
+.src-fetch{color:var(--amber);border-color:var(--amber-line);background:var(--amber-soft)}
+.hash{font-family:var(--mono);font-size:11px;color:var(--ink-3);cursor:copy}
+
+/* ---------- 概览 ---------- */
+.ov-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:22px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.panel h2{font-family:var(--serif);font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.panel h2 .ic{color:var(--gold)}
+.act-item{display:flex;gap:12px;padding:9px 2px;border-bottom:1px dashed var(--line);font-size:12.5px;align-items:baseline}
+.act-item:last-child{border-bottom:none}
+.act-item .t{font-family:var(--mono);font-size:11px;color:var(--ink-3);flex:none;width:132px}
+.act-item .tag{flex:none;font-size:10.5px;border:1px solid var(--line-2);border-radius:3px;padding:0 5px;color:var(--ink-2);background:var(--panel-2)}
+.fail-panel{border-color:var(--red-line);background:linear-gradient(180deg,var(--red-soft),#fff 60%);margin-bottom:22px}
+.fail-panel h2{color:var(--red)}
+.fail-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--red-line);font-size:13px}
+.fail-item:last-child{border-bottom:none}
+
+/* ---------- 快照选择 / 对比 ---------- */
+.cmpbar{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--side);color:#fff;border-radius:10px;padding:10px 12px 10px 20px;display:flex;gap:14px;align-items:center;box-shadow:0 16px 40px -12px rgba(21,34,57,.6);z-index:60;animation:up .2s}
+.cmpbar .mono{color:var(--gold)}
+.tabs{display:flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:4px;width:max-content;margin-bottom:16px}
+.tabs button{border:none;background:transparent;padding:6px 16px;border-radius:6px;font-size:12.5px;color:var(--ink-2);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 4px rgba(21,34,57,.14)}
+.sbs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sbs .col h4{font-size:12px;color:var(--ink-2);margin-bottom:8px;display:flex;justify-content:space-between}
+.sbs iframe,.prev-frame{width:100%;height:480px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.diff{font-family:var(--mono);font-size:12px;line-height:1.75;background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.diff .ln{display:flex}
+.diff .ln .no{width:46px;flex:none;text-align:right;padding-right:10px;color:var(--ink-3);user-select:none;background:var(--panel-2);border-right:1px solid var(--line)}
+.diff .ln .tx{padding:0 14px;white-space:pre-wrap;word-break:break-all;flex:1;min-width:0}
+.diff .ln.plus{background:#E9F4EC}.diff .ln.plus .tx{color:#1E5B38}
+.diff .ln.minus{background:#F9E9E6}.diff .ln.minus .tx{color:#8C2F24}
+.diff .gap{padding:4px 14px;color:var(--ink-3);background:var(--panel-2);font-size:11px;text-align:center;border-top:1px dashed var(--line-2);border-bottom:1px dashed var(--line-2)}
+.cmp-meta{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.cmp-meta .chip-add{color:#1E5B38;border-color:#BFDCC9;background:#E9F4EC}
+.cmp-meta .chip-del{color:#8C2F24;border-color:var(--red-line);background:#F9E9E6}
+
+/* ---------- 弹窗 / 提示 ---------- */
+.mask{position:fixed;inset:0;background:rgba(21,32,53,.46);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:100;animation:fade .15s;padding:20px}
+.modal{background:#fff;border-radius:14px;border:1px solid var(--line);width:560px;max-width:100%;max-height:calc(100vh - 48px);display:flex;flex-direction:column;animation:pop .18s;box-shadow:0 40px 90px -30px rgba(21,34,57,.5)}
+.modal.w-lg{width:980px}
+.modal.w-md{width:680px}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:17px 22px;border-bottom:1px solid var(--line)}
+.modal-h h3{font-family:var(--serif);font-size:17px;font-weight:700;display:flex;align-items:center;gap:9px}
+.modal-b{padding:22px;overflow:auto}
+.modal-f{padding:15px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.modal-f .left{margin-right:auto;color:var(--ink-3);font-size:12px;display:flex;align-items:center;gap:6px}
+.x-btn{border:none;background:transparent;cursor:pointer;color:var(--ink-3);padding:4px;border-radius:6px;display:flex}
+.x-btn:hover{background:var(--panel-2);color:var(--ink)}
+#toasts{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:300;align-items:center}
+.toast{background:#1A2537;color:#EDF0F6;padding:10px 20px;border-radius:9px;font-size:13px;box-shadow:0 12px 32px -10px rgba(0,0,0,.45);animation:up .22s;display:flex;gap:8px;align-items:center;max-width:80vw}
+.toast.err{background:var(--red)}
+.toast.ok{background:var(--green)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line-2);border-top-color:var(--navy);border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---------- 设置 ---------- */
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.set-grid .panel.wide{grid-column:1/-1}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line);font-size:13px;gap:14px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--ink-2)}
+.usage-bar{height:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+.usage-bar i{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .3s}
+.usage-bar i.hot{background:var(--amber)}
+.usage-bar i.full{background:var(--red)}
+.note{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:7px;padding:11px 14px;line-height:1.8}
+.chain-res{margin-top:14px}
+.chain-res .kv .mono{color:var(--ink)}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:960px){
+  .shell{flex-direction:column}
+  .side{width:100%;height:auto;position:static}
+  .side nav{display:flex;overflow-x:auto;padding:8px 10px}
+  .nav-item{white-space:nowrap;border-left:none;border-bottom:3px solid transparent;margin-bottom:0}
+  .nav-item.on{border-bottom-color:var(--gold)}
+  .side-foot{display:flex;justify-content:space-between;align-items:center}
+  .side-foot .ver{display:none}
+  .main{padding:22px 16px 50px}
+  .ov-grid,.set-grid{grid-template-columns:1fr}
+  .sbs{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- 登录 / 初始化 -->
+<div id="gate" class="gate"><div class="gate-card" id="gate-card"></div></div>
+
+<!-- 主界面 -->
+<div id="shell" class="shell hide">
+  <aside class="side">
+    <div class="side-brand">
+      <svg width="38" height="38" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" fill="#B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="#F6F4EC" font-family="Noto Serif SC,serif" font-weight="900">隐</text></svg>
+      <div><div class="t">隐私政策管理台</div><div class="e">PRIVACY REGISTRY</div></div>
+    </div>
+    <nav>
+      <div class="nav-item" data-go="#/overview" id="nav-overview"><span data-ic="grid"></span>概览</div>
+      <div class="nav-item" data-go="#/apps" id="nav-apps"><span data-ic="phone"></span>应用管理<span class="bdg hide" id="badg-bad"></span></div>
+      <div class="nav-item" data-go="#/snaps" id="nav-snaps"><span data-ic="archive"></span>快照库</div>
+      <div class="nav-item" data-go="#/settings" id="nav-settings"><span data-ic="sliders"></span>设置</div>
+    </nav>
+    <div class="side-foot">
+      <div class="clock"><span data-ic="clock"></span><span id="clock">—</span></div>
+      <div class="lockbtn" data-act="lock"><span data-ic="lock"></span>锁定管理台</div>
+      <div class="ver">V1.0 · STATIC BUILD</div>
+    </div>
+  </aside>
+  <main class="main"><div id="view" class="view"></div></main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toasts"></div>
+<input type="file" id="file-in" accept=".html,.htm" class="hide">
+<input type="file" id="imp-in" accept=".json" class="hide">
+<noscript><div style="padding:40px;text-align:center;font-size:15px">本平台需要启用 JavaScript 才能运行。</div></noscript>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="window.__qrFail=1" referrerpolicy="no-referrer"></script>
+<script id="app-js">
+'use strict';
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const b64=b=>btoa(String.fromCharCode(...b));
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const fmtT=t=>{const d=new Date(t);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`};
+const fmtD=t=>fmtT(t).slice(0,10);
+const fmtSize=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';
+const ago=t=>{const s=(Date.now()-t)/1000;if(s<90)return '刚刚';if(s<3600)return Math.round(s/60)+' 分钟前';if(s<86400)return Math.round(s/3600)+' 小时前';return fmtD(t)};
+function toast(msg,type){const el=document.createElement('div');el.className='toast '+(type||'');el.textContent=msg;$('#toasts').appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),320)},type==='err'?3600:2600);}
+async function copyText(t,silent){try{await navigator.clipboard.writeText(t);if(!silent)toast('已复制到剪贴板','ok');}catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');if(!silent)toast('已复制到剪贴板','ok')}catch(_){toast('复制失败','err')}ta.remove();}}
+function dlFile(name,content,mime){const b=new Blob([content],{type:mime||'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},400);}
+
+/* ================= 图标 ================= */
+const ICONS={
+grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+phone:'<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+archive:'<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/>',
+sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+lock:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',
+link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+refresh:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+check:'<polyline points="20 6 9 17 4 12"/>',
+alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+columns:'<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/>',
+external:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+back:'<polyline points="15 18 9 12 15 6"/>',
+key:'<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/>',
+qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="17" y1="17" x2="21" y2="17"/><line x1="21" y1="14" x2="21" y2="21"/>',
+globe:'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+};
+function ic(n,s=16){return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;}
+function paintIcons(root){(root||document).querySelectorAll('[data-ic]').forEach(el=>{el.innerHTML=ic(el.dataset.ic,el.dataset.sz||16);el.removeAttribute('data-ic');});}
+
+/* ================= 存储 ================= */
+const DB_KEY='ppm.db.v1', AUTH_KEY='ppm.auth.v1';
+let db=null;
+function loadDb(){try{db=JSON.parse(localStorage.getItem(DB_KEY))}catch(e){db=null}
+  if(!db||typeof db!=='object')db={settings:{domain:'',intervalMin:30},apps:[],snapshots:[],activity:[],lastCheckAt:0};
+  db.settings=db.settings||{domain:'',intervalMin:30};db.apps=db.apps||[];db.snapshots=db.snapshots||[];db.activity=db.activity||[];}
+function saveDb(){try{localStorage.setItem(DB_KEY,JSON.stringify(db))}catch(e){toast('本地存储空间不足，请删除部分历史快照后重试','err')}}
+function logAct(type,text){db.activity.unshift({at:Date.now(),type,text});db.activity=db.activity.slice(0,300);}
+function getAuth(){try{return JSON.parse(localStorage.getItem(AUTH_KEY))}catch(e){return null}}
+function lockGet(k){try{return +localStorage.getItem(k)||0}catch(e){return 0}}
+function lockSet(k,until){localStorage.setItem(k,String(until))}
+
+/* ================= 密码学（Web Crypto 优先，纯 JS 后备） ================= */
+const ITER=150000, B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+const te=new TextEncoder();
+function concatBytes(...arrs){const n=arrs.reduce((s,a)=>s+a.length,0);const out=new Uint8Array(n);let o=0;for(const a of arrs){out.set(a,o);o+=a.length;}return out;}
+const K256=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+const rotr=(x,n)=>(x>>>n)|(x<<(32-n));
+const SHA256_IV=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+const W256=new Int32Array(64);
+function sha256block(H,dv,off){
+  const w=W256;
+  for(let i=0;i<16;i++)w[i]=dv.getUint32(off+i*4);
+  for(let i=16;i<64;i++){const a=w[i-15],b=w[i-2];w[i]=(w[i-16]+(rotr(a,7)^rotr(a,18)^(a>>>3))+w[i-7]+(rotr(b,17)^rotr(b,19)^(b>>>10)))|0;}
+  let a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+  for(let i=0;i<64;i++){const S1=rotr(e,6)^rotr(e,11)^rotr(e,25),ch=(e&f)^(~e&g);
+    const t1=(h+S1+ch+K256[i]+w[i])|0;const S0=rotr(a,2)^rotr(a,13)^rotr(a,22),mj=(a&b)^(a&c)^(b&c);
+    h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+(S0+mj))|0;}
+  H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;}
+function sha256js(msg){const l=msg.length,total=Math.ceil((l+9)/64)*64;
+  const buf=new Uint8Array(total);buf.set(msg);buf[l]=0x80;
+  const dv=new DataView(buf.buffer);dv.setUint32(total-8,Math.floor(l/536870912));dv.setUint32(total-4,(l<<3)>>>0);
+  const H=new Int32Array(SHA256_IV);
+  for(let off=0;off<total;off+=64)sha256block(H,dv,off);
+  const out=new Uint8Array(32);const odv=new DataView(out.buffer);
+  for(let i=0;i<8;i++)odv.setUint32(i*4,H[i]>>>0);return out;}
+function sha1js(msg){let h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0;
+  const l=msg.length,total=Math.ceil((l+9)/64)*64;
+  const buf=new Uint8Array(total);buf.set(msg);buf[l]=0x80;
+  const dv=new DataView(buf.buffer);dv.setUint32(total-4,(l<<3)>>>0);
+  const w=new Int32Array(80);
+  for(let off=0;off<total;off+=64){
+    for(let i=0;i<16;i++)w[i]=dv.getUint32(off+i*4);
+    for(let i=16;i<80;i++){const x=(w[i-3]^w[i-8]^w[i-14]^w[i-16])|0;w[i]=(x<<1)|(x>>>31);}
+    let a=h0,b=h1,c=h2,d=h3,e=h4;
+    for(let i=0;i<80;i++){let f,k;
+      if(i<20){f=(b&c)|(~b&d);k=0x5A827999;}
+      else if(i<40){f=b^c^d;k=0x6ED9EBA1;}
+      else if(i<60){f=(b&c)|(b&d)|(c&d);k=0x8F1BBCDC;}
+      else{f=b^c^d;k=0xCA62C1D6;}
+      const t=((((a<<5)|(a>>>27))+f+e+k+w[i])|0);
+      e=d;d=c;c=(b<<30)|(b>>>2);b=a;a=t;}
+    h0=(h0+a)|0;h1=(h1+b)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;}
+  const out=new Uint8Array(20);const odv=new DataView(out.buffer);
+  odv.setUint32(0,h0>>>0);odv.setUint32(4,h1>>>0);odv.setUint32(8,h2>>>0);odv.setUint32(12,h3>>>0);odv.setUint32(16,h4>>>0);return out;}
+function hmacBytes(hashFn,key,msg){
+  if(key.length>64)key=hashFn(key);
+  const k=new Uint8Array(64);k.set(key);
+  const ip=new Uint8Array(64),op=new Uint8Array(64);
+  for(let i=0;i<64;i++){ip[i]=k[i]^0x36;op[i]=k[i]^0x5c;}
+  return hashFn(concatBytes(op,hashFn(concatBytes(ip,msg))));}
+function pbkdf2Js(password,salt,iters,dkLen){
+  let pw=typeof password==='string'?te.encode(password):password;
+  if(pw.length>64)pw=sha256js(pw);
+  const k=new Uint8Array(64);k.set(pw);
+  const ip=new Uint8Array(64),op=new Uint8Array(64);
+  for(let i=0;i<64;i++){ip[i]=k[i]^0x36;op[i]=k[i]^0x5c;}
+  const Hip=new Int32Array(SHA256_IV);sha256block(Hip,new DataView(ip.buffer),0);
+  const Hop=new Int32Array(SHA256_IV);sha256block(Hop,new DataView(op.buffer),0);
+  const midHash=(Hmid,msg)=>{ // 快速路径：msg ≤ 55 字节（本实现中 salt+4 与 32B 摘要均满足）
+    const b=new Uint8Array(64),dv=new DataView(b.buffer);
+    b.set(msg);b[msg.length]=0x80;
+    dv.setUint32(56,Math.floor((64+msg.length)/536870912));dv.setUint32(60,((64+msg.length)<<3)>>>0);
+    const H=new Int32Array(Hmid);sha256block(H,dv,0);
+    const o=new Uint8Array(32),odv=new DataView(o.buffer);
+    for(let i=0;i<8;i++)odv.setUint32(i*4,H[i]>>>0);return o;};
+  const blocks=Math.ceil(dkLen/32);const out=new Uint8Array(blocks*32);
+  for(let b=1;b<=blocks;b++){
+    const sb=new Uint8Array(salt.length+4);sb.set(salt);new DataView(sb.buffer).setUint32(salt.length,b);
+    let u=sb.length<=55?midHash(Hop,midHash(Hip,sb)):hmacBytes(sha256js,pw,sb);
+    const t=u.slice();
+    for(let i=1;i<iters;i++){
+      u=midHash(Hop,midHash(Hip,u));
+      for(let j=0;j<32;j++)t[j]^=u[j];}
+    out.set(t,(b-1)*32);}
+  return out.subarray(0,dkLen);}
+const CR={
+  native:(typeof crypto!=='undefined')&&!!(crypto&&crypto.subtle),
+  rand(n){const b=new Uint8Array(n);if(typeof crypto!=='undefined'&&crypto.getRandomValues)crypto.getRandomValues(b);else for(let i=0;i<n;i++)b[i]=(Math.random()*256)|0;return b;},
+  async sha256(b){return this.native?new Uint8Array(await crypto.subtle.digest('SHA-256',b)):sha256js(b);},
+  async hmac256(key,msg){if(this.native){const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-256'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',k,msg));}return hmacBytes(sha256js,key,msg);},
+  async hmac1(key,msg){if(this.native){const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-1'},false,['sign']);return new Uint8Array(await crypto.subtle.sign('HMAC',k,msg));}return hmacBytes(sha1js,key,msg);},
+  async pbkdf2(password,salt,iters,dkLen){
+    if(this.native){const km=await crypto.subtle.importKey('raw',te.encode(password),'PBKDF2',false,['deriveBits']);return new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:iters,hash:'SHA-256'},km,dkLen*8));}
+    return pbkdf2Js(password,salt,iters,dkLen);}
+};
+async function derive(password,saltB64){
+  const bits=await CR.pbkdf2(password,b64d(saltB64),ITER,64);
+  return {verifier:bits.slice(0,32),keyRaw:bits.slice(32,64)};}
+async function envEnc(key,str){const pt=te.encode(str);const nonce=CR.rand(16);
+  const ct=new Uint8Array(pt.length);const blocks=Math.ceil(pt.length/32)||1;
+  for(let i=0;i<blocks;i++){const ctr=new Uint8Array(4);new DataView(ctr.buffer).setUint32(0,i);
+    const ks=await CR.hmac256(key,concatBytes(Uint8Array.of(1),nonce,ctr));
+    for(let j=0;j<32&&i*32+j<pt.length;j++)ct[i*32+j]=pt[i*32+j]^ks[j];}
+  const tag=(await CR.hmac256(key,concatBytes(Uint8Array.of(2),nonce,ct))).slice(0,16);
+  return {n:b64(nonce),t:b64(tag),c:b64(ct)};}
+async function envDec(key,box){const nonce=b64d(box.n),tag=b64d(box.t),ct=b64d(box.c);
+  const calc=(await CR.hmac256(key,concatBytes(Uint8Array.of(2),nonce,ct))).slice(0,16);
+  let bad=false;for(let i=0;i<16;i++)if(calc[i]!==tag[i])bad=true;
+  if(bad)throw new Error('tamper');
+  const blocks=Math.ceil(ct.length/32)||1;const pt=new Uint8Array(ct.length);
+  for(let i=0;i<blocks;i++){const ctr=new Uint8Array(4);new DataView(ctr.buffer).setUint32(0,i);
+    const ks=await CR.hmac256(key,concatBytes(Uint8Array.of(1),nonce,ctr));
+    for(let j=0;j<32&&i*32+j<ct.length;j++)pt[i*32+j]=ct[i*32+j]^ks[j];}
+  return new TextDecoder().decode(pt);}
+async function sha256Hex(str){const d=await CR.sha256(te.encode(str));return [...d].map(b=>b.toString(16).padStart(2,'0')).join('');}
+function b32d(s){s=String(s).toUpperCase().replace(/[^A-Z2-7]/g,'');let bits=0,val=0;const out=[];for(const c of s){val=(val<<5)|B32.indexOf(c);bits+=5;if(bits>=8){out.push((val>>>(bits-8))&255);bits-=8;}}return new Uint8Array(out);}
+function b32e(bytes){let bits=0,val=0,out='';for(const b of bytes){val=(val<<8)|b;bits+=8;while(bits>=5){out+=B32[(val>>>(bits-5))&31];bits-=5;}}if(bits>0)out+=B32[(val<<(5-bits))&31];return out;}
+async function totpAt(secretBytes,counter){const b=new ArrayBuffer(8);new DataView(b).setUint32(4,counter>>>0);
+  const m=await CR.hmac1(secretBytes,new Uint8Array(b));const o=m[19]&15;
+  const n=((m[o]&127)<<24)|(m[o+1]<<16)|(m[o+2]<<8)|m[o+3];return String(n%1000000).padStart(6,'0');}
+async function totpVerifyCode(secretB64,code){code=String(code||'').replace(/\D/g,'');if(code.length!==6)return false;
+  const sb=b32d(secretB64),c=Math.floor(Date.now()/30000);
+  for(let i=-1;i<=1;i++){if(await totpAt(sb,c+i)===code)return true;}return false;}
+
+/* ================= 会话 ================= */
+const ses={key:null,secret:null}; // 登录后内存中的密钥与 TOTP 密钥（不落盘）
+function authed(){return !!(ses.key&&ses.secret);}
+async function doLogin(password){const rec=getAuth();if(!rec)return false;
+  const d=await derive(password,rec.salt);
+  if(b64(d.verifier)!==rec.verifier)return false;
+  ses.key=d.keyRaw;ses.secret=await envDec(d.keyRaw,rec.totp);return true;}
+async function saveAuthRecord(password,secretB64){const salt=CR.rand(16);
+  const d=await derive(password,b64(salt));
+  const box=await envEnc(d.keyRaw,secretB64);
+  localStorage.setItem(AUTH_KEY,JSON.stringify({v:1,alg:'env1',salt:b64(salt),iterations:ITER,verifier:b64(d.verifier),totp:box}));}
+
+/* ================= 链接检测 ================= */
+const PROXIES=[
+  {build:u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u),
+   parse:async r=>{const j=await r.json();const c=(j.status&&j.status.http_code)||0;return{ok:c>=200&&c<400,status:c,text:(c>=200&&c<400)?j.contents:null};}},
+  {build:u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+   parse:async r=>({ok:r.ok,status:r.status,text:r.ok?await r.text():null})},
+];
+const T=ms=>AbortSignal.timeout(ms);
+async function proxyFetch(url){for(const p of PROXIES){try{const r=await fetch(p.build(url),{signal:T(22000)});if(!r.ok)continue;return await p.parse(r);}catch(e){}}return null;}
+
+const checking=new Set();
+async function checkApp(app,silent){
+  if(checking.has(app.id))return app.lastCheck;checking.add(app.id);setStatusCell(app.id,'checking');
+  let res=null;
+  try{
+    try{const r=await fetch(app.url,{mode:'cors',cache:'no-store',signal:T(13000)});
+      res={ok:r.ok,status:r.status,via:'direct'};
+      if(r.ok){const t=await r.text();if(await maybeSnapshot(app,t)&&!silent)toast(`「${app.name}」在线内容已变更，自动生成新快照`);}}catch(e){}
+    if(!res){try{await fetch(app.url,{mode:'no-cors',cache:'no-store',signal:T(13000)});res={ok:true,status:0,via:'opaque'};}catch(e){}}
+    if(!res){const p=await proxyFetch(app.url);if(p)res={ok:p.ok,status:p.status,via:'proxy'};
+      if(p&&p.ok&&p.text&&/<[a-z!]/i.test(p.text)){if(await maybeSnapshot(app,p.text)&&!silent)toast(`「${app.name}」在线内容已变更，自动生成新快照`);}}
+    if(!res)res={ok:false,status:0,via:'none'};
+  }finally{checking.delete(app.id);}
+  app.lastCheck={at:Date.now(),ok:res.ok,status:res.status,via:res.via};
+  saveDb();setStatusCell(app.id);updateBadg();
+  return app.lastCheck;}
+async function checkAll(silent){
+  const apps=[...db.apps];let okc=0,badc=0;
+  for(const a of apps){const r=await checkApp(a,true);r&&r.ok?okc++:badc++;}
+  db.lastCheckAt=Date.now();saveDb();
+  if(!silent)toast(`检测完成：${okc} 个正常，${badc} 个异常`,badc?'err':'ok');
+  if(location.hash.startsWith('#/overview'))render();
+  return {okc,badc};}
+function maybeCheckAll(){const iv=(db.settings.intervalMin||30)*60000;
+  if(db.apps.length&&Date.now()-(db.lastCheckAt||0)>iv){logAct('check','打开平台自动触发全量链接检测');checkAll(false);}}
+
+/* ================= 快照 ================= */
+const snapsOf=appId=>db.snapshots.filter(s=>s.appId===appId).sort((a,b)=>a.version-b.version);
+const latestSnap=appId=>{const ss=snapsOf(appId);return ss.length?ss[ss.length-1]:null;};
+async function createSnapshot(app,content,source){
+  const last=latestSnap(app.id);const version=(last?last.version:0)+1;
+  const contentHash=await sha256Hex(content);
+  const chainHash=await sha256Hex((last?last.chainHash:'GENESIS')+'|'+app.id+'|'+version+'|'+Date.now()+'|'+contentHash);
+  db.snapshots.push({id:uid(),appId:app.id,version,at:Date.now(),source,content,contentHash,chainHash,size:new Blob([content]).size});
+  app.updatedAt=Date.now();
+  logAct('snapshot',`${source==='upload'?'上传':'在线抓取'}了「${app.name}」的 V${String(version).padStart(3,'0')} 快照`);
+  saveDb();return version;}
+async function rebuildChain(appId){let prev='GENESIS';
+  for(const s of snapsOf(appId)){s.chainHash=await sha256Hex(prev+'|'+s.appId+'|'+s.version+'|'+s.at+'|'+s.contentHash);prev=s.chainHash;}}
+async function verifyChains(){const out=[];
+  for(const app of db.apps){const ss=snapsOf(app.id);let ok=true,bad=null,prev='GENESIS';
+    for(const s of ss){
+      if(await sha256Hex(s.content)!==s.contentHash){ok=false;bad=s;break;}
+      const h=await sha256Hex(prev+'|'+s.appId+'|'+s.version+'|'+s.at+'|'+s.contentHash);
+      if(h!==s.chainHash){ok=false;bad=s;break;}
+      prev=s.chainHash;}
+    out.push({app,ok,bad});}
+  return out;}
+
+/* ================= TOTP 二次验证门 ================= */
+let totpFails=0;
+function gate(action,label){
+  if(!authed())return;
+  const until=lockGet('ppm.tlock');
+  const left=until-Date.now();
+  if(left>0){toast(`验证尝试过于频繁，请 ${Math.ceil(left/1000)} 秒后重试`,'err');return;}
+  openModal(`
+    <div class="modal-h"><h3>${ic('shield',18)}二次验证 · ${esc(label||'敏感操作')}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+    <div class="modal-b">
+      <p style="font-size:13px;color:var(--ink-2);margin-bottom:16px">请打开 <b>Microsoft Authenticator</b>，输入应用账户当前显示的 <b>6 位验证码</b>。</p>
+      <div class="field"><input class="totp-input" id="gate-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" autofocus></div>
+      <div class="form-err" id="gate-err"></div>
+    </div>
+    <div class="modal-f"><span class="left">${ic('lock',13)}验证码 30 秒更换一次</span><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="gate-ok">验证并执行</button></div>`,
+  m=>{
+    const inp=$('#gate-code',m);inp.focus();
+    inp.addEventListener('input',()=>inp.value=inp.value.replace(/\D/g,'').slice(0,6));
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')$('#gate-ok',m).click();});
+    $('#gate-ok',m).addEventListener('click',async()=>{
+      const btn=$('#gate-ok',m);btn.disabled=true;btn.textContent='验证中…';
+      if(await totpVerifyCode(ses.secret,inp.value)){
+        totpFails=0;closeModal();try{await action();}catch(e){toast(e&&e.message?e.message:'操作失败','err');}
+      }else{
+        totpFails++;inp.classList.add('err','shake');setTimeout(()=>inp.classList.remove('shake'),350);
+        $('#gate-err',m).textContent='验证码不正确，请重试';
+        if(totpFails>=5){lockSet('ppm.tlock',Date.now()+60000);totpFails=0;closeModal();toast('失败次数过多，二次验证已锁定 60 秒','err');}
+        btn.disabled=false;btn.textContent='验证并执行';inp.focus();inp.select();}
+    });
+  });}
+
+/* ================= 弹窗 ================= */
+function openModal(html,onmount,cls){const m=document.createElement('div');m.className='mask';
+  m.innerHTML=`<div class="modal ${cls||''}">${html}</div>`;document.getElementById('modal-root').appendChild(m);
+  m.addEventListener('mousedown',e=>{if(e.target===m)closeModal();});
+  m.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',closeModal));
+  if(onmount)onmount(m);return m;}
+function closeModal(){const r=document.getElementById('modal-root');r.innerHTML='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function confirmDlg({title,body,okText,danger}){
+  return new Promise(res=>{
+    openModal(`
+      <div class="modal-h"><h3>${ic('alert',18)}${esc(title)}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-b" style="font-size:13.5px;color:var(--ink-2);line-height:1.9">${body}</div>
+      <div class="modal-f"><button class="btn" id="cf-no">取消</button><button class="btn ${danger?'btn-danger':'btn-primary'}" id="cf-ok">${esc(okText||'确认')}</button></div>`,
+    m=>{
+      $('#cf-ok',m).addEventListener('click',()=>{closeModal();res(true);});
+      $('#cf-no',m).addEventListener('click',()=>{closeModal();res(false);});
+      m.addEventListener('mousedown',e=>{if(e.target===m){closeModal();res(false);}});
+    });});}
+
+/* ================= 状态渲染 ================= */
+function chipHtml(app){
+  const c=app.lastCheck;
+  if(!c)return `<span class="chip chip-unk"><span class="dot"></span>未检测</span>`;
+  const via={direct:'直连',opaque:'直连(跨域)',proxy:'代理',none:'—'}[c.via]||c.via;
+  const t=`检测于 ${fmtT(c.at)} · 通道 ${via}`;
+  if(c.ok)return c.status?`<span class="chip chip-ok" title="${esc(t)}"><span class="dot"></span>HTTP ${c.status}</span>`:`<span class="chip chip-ok" title="${esc(t)}（跨域限制，无法读取状态码）"><span class="dot"></span>可达</span>`;
+  return c.status?`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>HTTP ${c.status} 异常</span>`:`<span class="chip chip-bad" title="${esc(t)}"><span class="dot"></span>不可达</span>`;}
+function setStatusCell(appId,mode){
+  const app=db.apps.find(a=>a.id===appId);if(!app)return;
+  $$(`[data-stcell="${appId}"]`).forEach(td=>{
+    td.innerHTML=mode==='checking'?'<span style="color:var(--ink-3);font-size:12px"><span class="spin"></span> 检测中…</span>':chipHtml(app);
+    const tr=td.closest('tr');if(tr)tr.classList.toggle('row-bad',mode!=='checking'&&app.lastCheck&&!app.lastCheck.ok);});
+  const bar=$(`[data-failcell="${appId}"]`);
+  if(bar){const bad=app.lastCheck&&!app.lastCheck.ok;bar.classList.toggle('hide',!bad);}}
+function updateBadg(){const n=db.apps.filter(a=>a.lastCheck&&!a.lastCheck.ok).length;const b=$('#badg-bad');if(b){b.textContent=n;b.classList.toggle('hide',!n);}}
+
+/* ================= 视图 ================= */
+const pkgChips=a=>{const p=[['Android',a.pkg?.android],['iOS',a.pkg?.ios],['HarmonyOS',a.pkg?.harmony]].filter(x=>x[1]);
+  return p.length?p.map(x=>`<span class="chip-tag" title="${x[0]}">${x[1]}</span>`).join(' '):'<span style="color:var(--ink-3)">—</span>';};
+const srcChip=s=>s==='upload'?`<span class="src-chip src-up">本地上传</span>`:`<span class="src-chip src-fetch">在线抓取</span>`;
+const hashShort=h=>h?h.slice(0,10)+'…':'';
+function statHtml(k,v,sub,bad){return `<div class="stat ${bad?'bad':''}"><div class="k">${k}</div><div class="v">${v}${sub?`<small>${sub}</small>`:''}</div></div>`;}
+
+function vOverview(){
+  const badApps=db.apps.filter(a=>a.lastCheck&&!a.lastCheck.ok);
+  const lastSnap=db.snapshots.length?Math.max(...db.snapshots.map(s=>s.at)):null;
+  const acts=db.activity.slice(0,11);
+  return `
+  <div class="page-head">
+    <div><h1>概览</h1><div class="sub">上次全量检测：${db.lastCheckAt?ago(db.lastCheckAt):'从未检测'} · 共 ${db.apps.length} 个应用在管</div></div>
+    <div class="acts"><button class="btn" data-act="check-all">${ic('refresh',14)}一键检测全部</button><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>
+  </div>
+  ${badApps.length?`<div class="panel fail-panel"><h2>${ic('alert',16)}失效链接预警（${badApps.length}）</h2>${badApps.map(a=>`
+    <div class="fail-item"><b>${esc(a.name)}</b><span class="mono" style="color:var(--ink-3)">${esc(a.url)}</span>
+    <span style="margin-left:auto">${chipHtml(a)}</span>
+    <button class="btn btn-sm" data-act="check-app" data-id="${a.id}">重新检测</button></div>`).join('')}</div>`:''}
+  <div class="stats">
+    ${statHtml('应用总数',db.apps.length)}
+    ${statHtml('快照总量',db.snapshots.length)}
+    ${statHtml('失效链接',badApps.length,'',!!badApps.length)}
+    ${statHtml('最近快照',lastSnap?`<span style="font-size:20px">${ago(lastSnap)}</span>`:'<span style="font-size:20px;color:var(--ink-3)">暂无</span>')}
+  </div>
+  <div class="ov-grid">
+    <div class="panel"><h2>${ic('zap',16)}最近动态</h2>
+      ${acts.length?acts.map(x=>`<div class="act-item"><span class="t">${fmtT(x.at)}</span><span class="tag">${esc(x.type)}</span><span>${esc(x.text)}</span></div>`).join(''):`<div style="color:var(--ink-3);font-size:13px;padding:20px 0;text-align:center">暂无动态</div>`}
+    </div>
+    <div class="panel"><h2>${ic('shield',16)}安全机制</h2>
+      <div class="kv"><span class="k">登录密码</span><span class="mono">PBKDF2 · 150,000 轮</span></div>
+      <div class="kv"><span class="k">二次验证</span><span class="mono">TOTP / Authenticator</span></div>
+      <div class="kv"><span class="k">快照防篡改</span><span class="mono">SHA-256 哈希链</span></div>
+      <div class="kv"><span class="k">数据位置</span><span class="mono">本浏览器本地存储</span></div>
+      <div style="margin-top:12px"><button class="btn btn-sm" data-act="verify-chain">${ic('shield',13)}校验快照链完整性</button></div>
+    </div>
+  </div>`;}
+
+function vApps(){
+  return `
+  <div class="page-head">
+    <div><h1>应用管理</h1><div class="sub">维护各端应用的包名、版本与隐私政策在线链接；失效链接将以红色高亮预警</div></div>
+    <div class="acts"><button class="btn" data-act="check-all">${ic('refresh',14)}一键检测全部</button><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>
+  </div>
+  ${db.apps.length?`
+  <div class="tbl-wrap"><table class="lg">
+    <thead><tr><th>应用</th><th>包名 / Bundle ID</th><th>当前版本</th><th>隐私政策链接</th><th>链接状态</th><th>快照</th><th style="text-align:right">操作</th></tr></thead>
+    <tbody>${db.apps.map(a=>`
+      <tr data-open-app="${a.id}" class="${a.lastCheck&&!a.lastCheck.ok?'row-bad':''}">
+        <td><div class="app-name">${esc(a.name)}<small>更新于 ${ago(a.updatedAt||a.createdAt)}</small></div></td>
+        <td>${pkgChips(a)}</td>
+        <td><span class="chip-tag">${esc(a.version||'—')}</span></td>
+        <td class="url-cell"><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.url)}</a></td>
+        <td data-stcell="${a.id}">${chipHtml(a)}</td>
+        <td><span class="mono" style="color:var(--ink-2)">${snapsOf(a.id).length} 份</span></td>
+        <td><div class="row-acts">
+          <button class="btn btn-sm" data-act="check-app" data-id="${a.id}" title="检测连通性">${ic('refresh',13)}</button>
+          <button class="btn btn-sm" data-act="upload" data-id="${a.id}" title="上传 HTML">${ic('upload',13)}</button>
+          <button class="btn btn-sm" data-act="edit-app" data-id="${a.id}" title="编辑">${ic('edit',13)}</button>
+          <button class="btn btn-sm btn-danger" data-act="del-app" data-id="${a.id}" title="删除">${ic('trash',13)}</button>
+        </div></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`:`
+  <div class="empty">${ic('phone',40)}<h3>还没有登记任何应用</h3><p>登记 App 名称、各端包名与隐私政策链接，开始统一管理</p><button class="btn btn-primary" data-act="add-app">${ic('plus',14)}新建应用</button></div>`}`;}
+
+function vAppDetail(id){
+  const app=db.apps.find(a=>a.id===id);
+  if(!app)return `<div class="empty">${ic('alert',36)}<h3>应用不存在或已被删除</h3><p><a href="#/apps">返回应用列表</a></p></div>`;
+  const ss=snapsOf(id).slice().reverse();
+  const pub=db.settings.domain?`${db.settings.domain.replace(/\/+$/,'')}/${slugOf(app)}/privacy.html`:null;
+  return `
+  <div class="page-head">
+    <div>
+      <h1><a href="#/apps" class="btn-ghost btn" style="padding:4px 8px">${ic('back',16)}</a>${esc(app.name)} <span class="chip-tag" style="vertical-align:4px">${esc(app.version||'')}</span></h1>
+      <div class="sub" style="margin-top:10px">${pkgChips(app)}</div>
+      <div class="sub" style="margin-top:8px">${ic('link',13)} <a href="${esc(app.url)}" target="_blank" rel="noopener" class="mono" style="font-size:12px">${esc(app.url)}</a> &nbsp;${chipHtml(app)}</div>
+      ${pub?`<div class="sub" style="margin-top:6px">${ic('globe',13)} 发布路径 <span class="mono" style="font-size:12px">${esc(pub)}</span> <button class="btn-ghost btn btn-sm" data-act="copy" data-cp="${esc(pub)}">${ic('copy',12)}</button></div>`:''}
+    </div>
+    <div class="acts">
+      <button class="btn" data-act="check-app" data-id="${app.id}">${ic('refresh',14)}检测连通</button>
+      <button class="btn" data-act="upload" data-id="${app.id}">${ic('upload',14)}上传 HTML</button>
+      <button class="btn" data-act="dl-current" data-id="${app.id}">${ic('download',14)}下载当前生效</button>
+      <button class="btn" data-act="export-app" data-id="${app.id}">${ic('archive',14)}导出历史快照</button>
+    </div>
+  </div>
+  <div class="tbl-wrap"><table class="lg" style="min-width:900px">
+    <thead><tr><th style="width:36px"></th><th>版本</th><th>抓取时间</th><th>来源</th><th>大小</th><th>内容指纹</th><th style="text-align:right">操作</th></tr></thead>
+    <tbody>
+    ${ss.length?ss.map(s=>`
+      <tr>
+        <td><input type="checkbox" data-sel-snap="${s.id}" ${sel.has(s.id)?'checked':''} style="accent-color:var(--navy)"></td>
+        <td><span class="snap-v">V${String(s.version).padStart(3,'0')}</span>${latestSnap(id)?.id===s.id?' <span class="chip chip-ok" style="height:18px;font-size:10px">生效中</span>':''}</td>
+        <td class="mono" style="font-size:12px">${fmtT(s.at)}</td>
+        <td>${srcChip(s.source)}</td>
+        <td class="mono" style="font-size:12px;color:var(--ink-2)">${fmtSize(s.size)}</td>
+        <td><span class="hash" title="点击复制完整指纹" data-act="copy" data-cp="${s.contentHash}">${hashShort(s.contentHash)}</span></td>
+        <td><div class="row-acts">
+          <button class="btn btn-sm" data-act="preview-snap" data-id="${s.id}">${ic('eye',13)}预览</button>
+          <button class="btn btn-sm" data-act="dl-snap" data-id="${s.id}" title="下载该快照">${ic('download',13)}</button>
+          <button class="btn btn-sm btn-danger" data-act="del-snap" data-id="${s.id}" title="删除该快照">${ic('trash',13)}</button>
+        </div></td>
+      </tr>`).join(''):`<tr><td colspan="7"><div class="empty" style="border:none;background:transparent">${ic('archive',36)}<h3>暂无快照</h3><p>上传 HTML 文件或检测在线内容变更后，将自动生成第一份快照</p></div></td></tr>`}
+    </tbody>
+  </table></div>
+  ${sel.size===2?`<div class="cmpbar"><span>${ic('columns',15)}</span><span class="mono">${[...sel].map(sid=>'V'+String(db.snapshots.find(x=>x.id===sid).version).padStart(3,'0')).join(' ↔ ')}</span><button class="btn btn-sm btn-primary" data-act="compare">对比所选版本</button></div>`:''}`;}
+
+let snapFilterApp='',snapFilterSrc='';
+function vSnaps(){
+  let list=db.snapshots.slice().sort((a,b)=>b.at-a.at);
+  if(snapFilterApp)list=list.filter(s=>s.appId===snapFilterApp);
+  if(snapFilterSrc)list=list.filter(s=>s.source===snapFilterSrc);
+  return `
+  <div class="page-head">
+    <div><h1>快照库</h1><div class="sub">全部历史快照总览 · 共 ${db.snapshots.length} 份；勾选任意两份可进行版本对比</div></div>
+    <div class="acts">
+      <select id="flt-app" class="mono" style="width:170px;height:34px"><option value="">全部应用</option>${db.apps.map(a=>`<option value="${a.id}" ${snapFilterApp===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>
+      <select id="flt-src" style="width:130px;height:34px"><option value="">全部来源</option><option value="upload" ${snapFilterSrc==='upload'?'selected':''}>本地上传</option><option value="fetch" ${snapFilterSrc==='fetch'?'selected':''}>在线抓取</option></select>
+    </div>
+  </div>
+  ${list.length?`
+  <div class="tbl-wrap"><table class="lg" style="min-width:900px">
+    <thead><tr><th style="width:36px"></th><th>应用</th><th>版本</th><th>抓取时间</th><th>来源</th><th>大小</th><th>内容指纹</th><th style="text-align:right">操作</th></tr></thead>
+    <tbody>${list.map(s=>{const a=db.apps.find(x=>x.id===s.appId);return `
+      <tr>
+        <td><input type="checkbox" data-sel-snap="${s.id}" ${sel.has(s.id)?'checked':''} style="accent-color:var(--navy)"></td>
+        <td><div class="app-name">${esc(a?a.name:'（已删除）')}</div></td>
+        <td><span class="snap-v">V${String(s.version).padStart(3,'0')}</span></td>
+        <td class="mono" style="font-size:12px">${fmtT(s.at)}</td>
+        <td>${srcChip(s.source)}</td>
+        <td class="mono" style="font-size:12px;color:var(--ink-2)">${fmtSize(s.size)}</td>
+        <td><span class="hash" title="点击复制完整指纹" data-act="copy" data-cp="${s.contentHash}">${hashShort(s.contentHash)}</span></td>
+        <td><div class="row-acts">
+          <button class="btn btn-sm" data-act="preview-snap" data-id="${s.id}">${ic('eye',13)}预览</button>
+          <button class="btn btn-sm" data-act="dl-snap" data-id="${s.id}" title="下载该快照">${ic('download',13)}</button>
+          <button class="btn btn-sm btn-danger" data-act="del-snap" data-id="${s.id}" title="删除该快照">${ic('trash',13)}</button>
+        </div></td>
+      </tr>`}).join('')}</tbody>
+  </table></div>
+  ${sel.size===2?`<div class="cmpbar"><span>${ic('columns',15)}</span><span class="mono">${[...sel].map(sid=>{const s=db.snapshots.find(x=>x.id===sid);const a=db.apps.find(x=>x.id===s.appId);return (a?a.name:'?')+' V'+String(s.version).padStart(3,'0')}).join(' ↔ ')}</span><button class="btn btn-sm btn-primary" data-act="compare">对比所选版本</button></div>`:''}`
+  :`<div class="empty">${ic('archive',40)}<h3>暂无快照</h3><p>在应用管理中上传 HTML 或检测在线内容变更，即可生成快照</p></div>`}`;}
+
+function usageInfo(){const used=new Blob([localStorage.getItem(DB_KEY)||'']).size;const cap=5*1024*1024;return {used,cap,pct:Math.min(100,Math.round(used/cap*100))};}
+function vSettings(){
+  const u=usageInfo();
+  const dom=db.settings.domain;
+  return `
+  <div class="page-head"><div><h1>设置</h1><div class="sub">文件域名 · 检测频率 · 安全与数据管理</div></div></div>
+  <div class="set-grid">
+    <div class="panel">
+      <h2>${ic('globe',16)}文件存放域名</h2>
+      <div class="field"><label>隐私政策 HTML 的部署根地址</label>
+        <input type="url" id="set-domain" class="mono" placeholder="https://privacy.example.com" value="${esc(dom)}">
+        <div class="hint">上传快照后，系统将按 <span class="mono">域名/应用标识/privacy.html</span> 生成发布路径，并可选同步为该应用的在线链接。</div>
+        <div style="margin-top:10px"><button class="btn btn-primary btn-sm" data-act="save-domain">保存域名</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>${ic('clock',16)}链接检测频率</h2>
+      <div class="field"><label>打开平台时自动检测（超过间隔才触发）</label>
+        <select id="set-interval" style="width:100%">
+          ${[5,15,30,60,120,1440].map(v=>`<option value="${v}" ${db.settings.intervalMin===v?'selected':''}>${v<60?v+' 分钟':v/60+' 小时'}</option>`).join('')}
+        </select>
+        <div style="margin-top:10px"><button class="btn btn-primary btn-sm" data-act="save-interval">保存频率</button>
+        <button class="btn btn-sm" data-act="check-all" style="margin-left:8px">${ic('refresh',13)}立即检测</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>${ic('shield',16)}安全</h2>
+      <div class="kv"><span class="k">登录密码</span><button class="btn btn-sm" data-act="chg-pass">${ic('key',13)}修改密码</button></div>
+      <div class="kv"><span class="k">验证器绑定</span><button class="btn btn-sm" data-act="rebind">${ic('qr',13)}重新绑定</button></div>
+      <div class="kv"><span class="k">快照完整性</span><button class="btn btn-sm" data-act="verify-chain">${ic('shield',13)}立即校验</button></div>
+      <div class="kv"><span class="k">加密实现</span><span class="mono">${CR.native?'Web Crypto 原生':'内置后备实现'}</span></div>
+      <div class="note" style="margin-top:14px">静态部署说明：密码以 PBKDF2（SHA-256，150,000 轮）派生哈希存储，验证器密钥经认证加密封装存储；全部数据仅保存在<b>当前浏览器</b>的本地存储中，不会上传服务器。${ctxNote()}</div>
+    </div>
+    <div class="panel">
+      <h2>${ic('archive',16)}数据</h2>
+      <div class="kv"><span class="k">备份导出（JSON）</span><button class="btn btn-sm" data-act="export-db">${ic('download',13)}导出</button></div>
+      <div class="kv"><span class="k">备份导入</span><button class="btn btn-sm" data-act="import-db">${ic('upload',13)}导入</button></div>
+      <div class="kv"><span class="k">清空全部数据</span><button class="btn btn-sm btn-danger" data-act="wipe">${ic('trash',13)}清空</button></div>
+      <div style="margin-top:16px">
+        <div class="k" style="font-size:12px;color:var(--ink-2);display:flex;justify-content:space-between"><span>本地存储用量</span><span class="mono">${fmtSize(u.used)} / ${fmtSize(u.cap)}</span></div>
+        <div class="usage-bar"><i class="${u.pct>85?'full':u.pct>60?'hot':''}" style="width:${u.pct}%"></i></div>
+      </div>
+    </div>
+  </div>`;}
+
+/* ================= 路由与渲染 ================= */
+const sel=new Set();
+function route(){const h=location.hash||'#/overview';const m=h.match(/^#\/app\/(.+)$/);
+  if(m)return {v:'app-detail',id:m[1]};
+  return {v:({ '#/overview':'overview','#/apps':'apps','#/snaps':'snaps','#/settings':'settings' })[h]||'overview'};}
+function render(){if(!authed())return;
+  const r=route();const view=$('#view');
+  if(r.v==='overview')view.innerHTML=vOverview();
+  else if(r.v==='apps')view.innerHTML=vApps();
+  else if(r.v==='app-detail')view.innerHTML=vAppDetail(r.id);
+  else if(r.v==='snaps')view.innerHTML=vSnaps();
+  else view.innerHTML=vSettings();
+  ['overview','apps','snaps','settings'].forEach(k=>{const el=$('#nav-'+k);if(el)el.classList.toggle('on',r.v===k||(r.v==='app-detail'&&k==='apps'));});
+  updateBadg();}
+function nav(h){location.hash=h;}
+
+/* ================= 应用表单 ================= */
+function appForm(a){
+  const isEdit=!!a;
+  openModal(`
+    <div class="modal-h"><h3>${ic(isEdit?'edit':'plus',18)}${isEdit?'编辑应用':'新建应用'}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+    <div class="modal-b">
+      <div class="field"><label>应用名称 *</label><input id="af-name" type="text" maxlength="40" placeholder="如：示例出行" value="${esc(a?.name||'')}"></div>
+      <div class="field"><label>Android 包名</label><input id="af-android" class="mono" type="text" placeholder="com.example.app" value="${esc(a?.pkg?.android||'')}"></div>
+      <div class="field"><label>iOS Bundle ID</label><input id="af-ios" class="mono" type="text" placeholder="com.example.app" value="${esc(a?.pkg?.ios||'')}"></div>
+      <div class="field"><label>HarmonyOS 包名</label><input id="af-harmony" class="mono" type="text" placeholder="com.example.app" value="${esc(a?.pkg?.harmony||'')}"></div>
+      <div class="field"><label>当前版本号</label><input id="af-ver" class="mono" type="text" placeholder="1.0.0" value="${esc(a?.version||'')}"></div>
+      <div class="field"><label>隐私政策在线链接 *</label><input id="af-url" class="mono" type="url" placeholder="https://example.com/privacy.html" value="${esc(a?.url||'')}"></div>
+      <div class="form-err" id="af-err"></div>
+    </div>
+    <div class="modal-f"><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="af-save">保存</button></div>`,
+  m=>{
+    const get=id=>$('#'+id,m).value.trim();
+    $('#af-save',m).addEventListener('click',()=>{
+      const name=get('af-name'),url=get('af-url'),err=$('#af-err',m);
+      if(!name){err.textContent='请填写应用名称';return;}
+      if(!/^https?:\/\/.+/i.test(url)){err.textContent='请填写合法的在线链接（以 http:// 或 https:// 开头）';return;}
+      const pkg={android:get('af-android'),ios:get('af-ios'),harmony:get('af-harmony')};
+      if(isEdit){Object.assign(a,{name,url,version:get('af-ver'),pkg,updatedAt:Date.now()});logAct('app',`编辑了应用「${name}」`);}
+      else{db.apps.push({id:uid(),name,url,version:get('af-ver'),pkg,createdAt:Date.now(),updatedAt:Date.now(),lastCheck:null});logAct('app',`新建了应用「${name}」`);}
+      saveDb();closeModal();render();toast(isEdit?'应用已更新':'应用已创建','ok');});
+  });}
+function slugOf(a){const s=(a.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return /^[a-z0-9-]{2,}$/.test(s)?s:'app-'+a.id.slice(0,6);}
+
+/* ================= 敏感操作（经二次验证） ================= */
+let pendingUpload=null;
+const ACT={
+  'lock'(){ses.key=null;ses.secret=null;$('#shell').classList.add('hide');$('#gate').classList.remove('hide');renderLogin();logAct('safe','锁定管理台');saveDb();},
+  'add-app'(){appForm(null);},
+  'edit-app'(d){appForm(db.apps.find(a=>a.id===d.id));},
+  async 'check-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;
+    const r=await checkApp(a);toast(r.ok?`「${a.name}」链接正常${r.status?'（HTTP '+r.status+'）':''}`:`「${a.name}」链接异常${r.status?'（HTTP '+r.status+'）':'（不可达）'}`,r.ok?'ok':'err');
+    if(route().v!=='apps')render();},
+  'check-all'(){logAct('check','手动触发全量链接检测');checkAll(false).then(()=>{if(route().v==='apps')render();});},
+  'upload'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;
+    gate(async()=>{pendingUpload=a.id;$('#file-in').value='';$('#file-in').click();},`上传 HTML · ${a.name}`);},
+  'dl-current'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const s=latestSnap(a.id);
+    if(!s){toast('该应用暂无快照，无法下载','err');return;}
+    gate(()=>{dlFile(`${slugOf(a)}-privacy-v${s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了「${a.name}」当前生效文件 V${s.version}`);saveDb();toast('已开始下载当前生效文件','ok');},`下载当前生效 · ${a.name}`);},
+  'export-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const ss=snapsOf(a.id);
+    if(!ss.length){toast('该应用暂无快照，无法导出','err');return;}
+    gate(()=>{dlFile(`${slugOf(a)}-snapshots-${fmtD(Date.now())}.html`,buildArchive(a,ss),'text/html;charset=utf-8');logAct('export',`批量导出了「${a.name}」的 ${ss.length} 份历史快照`);saveDb();toast(`已导出 ${ss.length} 份历史快照`,'ok');},`批量导出快照 · ${a.name}`);},
+  'preview-snap'(d){const s=db.snapshots.find(x=>x.id===d.id);if(!s)return;const a=db.apps.find(x=>x.id===s.appId);
+    openModal(`
+      <div class="modal-h"><h3>${ic('eye',18)}快照预览 · ${esc(a?a.name:'已删除')} <span class="snap-v" style="margin-left:6px">V${String(s.version).padStart(3,'0')}</span></h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-b">
+        <div class="cmp-meta" style="margin-bottom:12px">${srcChip(s.source)}<span class="chip-tag">${fmtT(s.at)}</span><span class="chip-tag">${fmtSize(s.size)}</span><span class="chip-tag" title="${s.contentHash}">指纹 ${hashShort(s.contentHash)}</span></div>
+        <iframe class="prev-frame" id="pv-frame" sandbox=""></iframe>
+      </div>
+      <div class="modal-f"><span class="left">${ic('shield',13)}预览已禁用脚本运行</span><button class="btn" data-close="1">关闭</button></div>`,
+    m=>{$('#pv-frame',m).srcdoc=s.content;}, 'w-lg');},
+  'dl-snap'(d){const s=db.snapshots.find(x=>x.id===d.id);if(!s)return;const a=db.apps.find(x=>x.id===s.appId);
+    gate(()=>{dlFile(`${slugOf(a||{name:'app',id:'x'})}-privacy-v${s.version}.html`,s.content,'text/html;charset=utf-8');logAct('export',`下载了快照 V${s.version}（${a?a.name:'已删除'}）`);saveDb();toast('已开始下载该快照','ok');},`下载快照 V${String(s.version).padStart(3,'0')}`);},
+  async 'del-app'(d){const a=db.apps.find(x=>x.id===d.id);if(!a)return;const n=snapsOf(a.id).length;
+    const ok=await confirmDlg({title:`删除应用「${a.name}」`,danger:true,okText:'我已知晓，删除',
+      body:`将永久删除该应用记录${n?`及其 <b style="color:var(--red)">${n} 份历史快照</b>`:''}，此操作不可撤销。`});
+    if(!ok)return;
+    gate(()=>{db.apps=db.apps.filter(x=>x.id!==a.id);db.snapshots=db.snapshots.filter(x=>x.appId!==a.id);
+      logAct('del',`删除了应用「${a.name}」${n?`及 ${n} 份快照`:''}`);saveDb();nav('#/apps');render();toast('应用已删除','ok');},`删除应用 · ${a.name}`);},
+  async 'del-snap'(d){const s=db.snapshots.find(x=>x.id===d.id);if(!s)return;const a=db.apps.find(x=>x.id===s.appId);
+    const ok=await confirmDlg({title:`删除快照 V${String(s.version).padStart(3,'0')}`,danger:true,okText:'删除快照',
+      body:`删除「${esc(a?.name||'已删除')}」的快照 <b>V${String(s.version).padStart(3,'0')}</b>？删除后该应用的哈希链将重建，历史版本出现空缺。`});
+    if(!ok)return;
+    gate(async()=>{db.snapshots=db.snapshots.filter(x=>x.id!==s.id);await rebuildChain(s.appId);
+      logAct('del',`删除了快照 V${String(s.version).padStart(3,'0')}（${a?a.name:'已删除'}），哈希链已重建`);saveDb();sel.clear();render();toast('快照已删除','ok');},`删除快照 V${String(s.version).padStart(3,'0')}`);},
+  'compare'(){if(sel.size!==2)return;const [x,y]=db.snapshots.filter(s=>sel.has(s.id));if(!x||!y)return;openCompare(x,y);},
+  'copy'(d){if(d.cp)copyText(d.cp);},
+  'save-domain'(){const v=$('#set-domain').value.trim();
+    if(v&&!/^https?:\/\/[^/]+/i.test(v)){toast('域名需以 http:// 或 https:// 开头','err');return;}
+    db.settings.domain=v.replace(/\/+$/,'');logAct('set',v?`设置了文件存放域名：${db.settings.domain}`:'清除了文件存放域名');saveDb();render();toast('域名已保存','ok');},
+  'save-interval'(){db.settings.intervalMin=+$('#set-interval').value||30;logAct('set',`检测频率调整为 ${db.settings.intervalMin} 分钟`);saveDb();toast('检测频率已保存','ok');},
+  'chg-pass'(){chgPassModal();},
+  'rebind'(){rebindModal();},
+  async 'verify-chain'(){toast('正在校验…');
+    const res=await verifyChains();const bad=res.filter(x=>!x.ok);
+    openModal(`
+      <div class="modal-h"><h3>${ic('shield',18)}快照链完整性校验</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-b">
+        ${res.length?res.map(x=>`<div class="kv"><span class="k">${esc(x.app.name)} · ${snapsOf(x.app.id).length} 份快照</span>
+          ${x.ok?`<span class="chip chip-ok">${ic('check',12)}完整</span>`:`<span class="chip chip-bad" title="首个异常版本 V${x.bad.version}">V${String(x.bad.version).padStart(3,'0')} 起校验失败</span>`}</div>`).join(''):'<div style="color:var(--ink-3)">暂无快照可校验</div>'}
+        <div class="note" style="margin-top:16px">每份快照含内容指纹与链式哈希（SHA-256），任一内容或顺序被改动都会导致其后所有版本校验失败。</div>
+      </div>
+      <div class="modal-f"><button class="btn btn-primary" data-close="1">完成</button></div>`);},
+  'export-db'(){gate(()=>{const payload={v:1,exportedAt:Date.now(),apps:db.apps,snapshots:db.snapshots,settings:db.settings,activity:db.activity};
+    dlFile(`ppm-backup-${fmtD(Date.now())}.json`,JSON.stringify(payload,null,2),'application/json');
+    logAct('export','导出了平台数据备份');saveDb();toast('备份已导出（不含密码与验证器密钥）','ok');},'导出数据备份');},
+  'import-db'(){gate(()=>{$('#imp-in').value='';$('#imp-in').click();},'导入数据备份');},
+  'wipe'(){confirmDlg({title:'清空全部数据',danger:true,okText:'全部清空',
+    body:`将删除 <b style="color:var(--red)">所有应用、快照与动态记录</b>，并重置管理台（回到首次初始化状态，需重新设置密码与验证器）。`})
+    .then(ok=>{if(!ok)return;gate(()=>{localStorage.removeItem(DB_KEY);localStorage.removeItem(AUTH_KEY);location.reload();},'清空全部数据');});},
+};
+
+/* ================= 对比 ================= */
+function diffLines(a,b){
+  const A=a.split('\n'),B=b.split('\n'),MAX=1600;
+  const truncated=A.length>MAX||B.length>MAX;
+  const n=Math.min(A.length,MAX),m=Math.min(B.length,MAX);
+  const dp=new Int32Array((n+1)*(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)
+    dp[i*(m+1)+j]=A[i]===B[j]?dp[(i+1)*(m+1)+j+1]+1:Math.max(dp[(i+1)*(m+1)+j],dp[i*(m+1)+j+1]);
+  const ops=[];let i=0,j=0;
+  while(i<n&&j<m){if(A[i]===B[j]){ops.push([' ',A[i],i+1,j+1]);i++;j++;}
+    else if(dp[(i+1)*(m+1)+j]>=dp[i*(m+1)+j+1]){ops.push(['-',A[i],i+1,null]);i++;}
+    else{ops.push(['+',B[j],null,j+1]);j++;}}
+  while(i<n)ops.push(['-',A[i],i+1,null]),i++;
+  while(j<m)ops.push(['+',B[j],null,j+1]),j++;
+  return {ops,truncated};}
+function buildHunks(ops,ctx=2){
+  const keep=new Array(ops.length).fill(false);let any=false;
+  ops.forEach((o,i)=>{if(o[0]!==' '){any=true;for(let k=Math.max(0,i-ctx);k<=Math.min(ops.length-1,i+ctx);k++)keep[k]=true;}});
+  if(!any)return [];
+  const blocks=[];let i=0;
+  while(i<ops.length){if(keep[i]){const s=i;while(i<ops.length&&keep[i])i++;blocks.push({s,e:i});}else i++;}
+  return blocks.map((b,bi)=>({gap:b.s-(bi===0?0:blocks[bi-1].e),lines:ops.slice(b.s,b.e)}));}
+function openCompare(x,y){
+  if(x.at>y.at){[x,y]=[y,x];}
+  const aName=(db.apps.find(v=>v.id===x.appId)||{}).name||'已删除';
+  const {ops,truncated}=diffLines(x.content,y.content);
+  const add=ops.filter(o=>o[0]==='+').length,del=ops.filter(o=>o[0]==='-').length;
+  const hunks=buildHunks(ops);
+  const diffHtml=truncated&&!hunks.length?`<div class="note">文件过大（超过 1600 行），已跳过逐行对比，请使用并排预览。</div>`
+    :hunks.length?`<div class="diff">${hunks.map(h=>`
+        ${h.gap?`<div class="gap">·· 中略 ${h.gap} 行未变 ··</div>`:''}
+        ${h.lines.map(o=>o[0]===' '?`<div class="ln"><span class="no">${o[2]}</span><span class="tx">${esc(o[1])}</span></div>`
+          :o[0]==='-'?`<div class="ln minus"><span class="no">${o[2]}</span><span class="tx">- ${esc(o[1])}</span></div>`
+          :`<div class="ln plus"><span class="no">${o[3]}</span><span class="tx">+ ${esc(o[1])}</span></div>`).join('')}
+      </div>`).join('')}</div>`
+    :`<div class="empty" style="padding:30px">${ic('check',30)}<h3 style="font-size:15px">两个版本内容完全一致</h3></div>`;
+  openModal(`
+    <div class="modal-h"><h3>${ic('columns',18)}版本对比 · ${esc(aName)}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+    <div class="modal-b">
+      <div class="cmp-meta">
+        <span class="snap-v">V${String(x.version).padStart(3,'0')}</span><span class="chip-tag">${fmtT(x.at)}</span><span class="chip-tag">${srcChip(x.source)}</span>
+        <span style="color:var(--ink-3)">→</span>
+        <span class="snap-v">V${String(y.version).padStart(3,'0')}</span><span class="chip-tag">${fmtT(y.at)}</span><span class="chip-tag">${srcChip(y.source)}</span>
+        <span class="chip chip-add chip" style="margin-left:auto">+${add} 行</span><span class="chip chip-del">-${del} 行</span>
+      </div>
+      <div class="tabs"><button class="on" data-cmp="sbs">并排预览</button><button data-cmp="diff">文本差异</button></div>
+      <div id="cmp-sbs"><div class="sbs">
+        <div class="col"><h4><span>V${String(x.version).padStart(3,'0')}</span><span class="mono">${hashShort(x.contentHash)}</span></h4><iframe class="prev-frame" sandbox="" data-fr="x"></iframe></div>
+        <div class="col"><h4><span>V${String(y.version).padStart(3,'0')}</span><span class="mono">${hashShort(y.contentHash)}</span></h4><iframe class="prev-frame" sandbox="" data-fr="y"></iframe></div>
+      </div></div>
+      <div id="cmp-diff" class="hide">${diffHtml}</div>
+    </div>
+    <div class="modal-f"><span class="left">${ic('shield',13)}预览已禁用脚本运行</span><button class="btn" data-close="1">关闭</button></div>`,
+    m=>{
+      m.querySelector('[data-fr="x"]').srcdoc=x.content;
+      m.querySelector('[data-fr="y"]').srcdoc=y.content;
+      m.querySelectorAll('[data-cmp]').forEach(b=>b.addEventListener('click',()=>{
+        m.querySelectorAll('[data-cmp]').forEach(x2=>x2.classList.toggle('on',x2===b));
+        $('#cmp-sbs',m).classList.toggle('hide',b.dataset.cmp!=='sbs');
+        $('#cmp-diff',m).classList.toggle('hide',b.dataset.cmp!=='diff');}));
+    },'w-lg');}
+
+/* ================= 批量导出档案 ================= */
+function buildArchive(app,ss){
+  const payload={app:{name:app.name,version:app.version,url:app.url},exportedAt:Date.now(),
+    snaps:ss.map(s=>({version:s.version,at:s.at,source:s.source,size:s.size,contentHash:s.contentHash,content:s.content}))};
+  const json=JSON.stringify(payload).replace(/<\//g,'<\\/');
+  return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>快照档案 · ${esc(app.name)}</title>
+<style>body{font-family:'Noto Sans SC',system-ui,sans-serif;margin:0;background:#F5F3EC;color:#1C2740}
+header{background:#152239;color:#F2F0E8;padding:22px 30px}header h1{margin:0;font-size:20px}header p{margin:6px 0 0;font-size:12px;color:#C7D1E3;font-family:monospace}
+.wrap{display:flex;height:calc(100vh - 92px)}aside{width:290px;overflow:auto;border-right:1px solid #E5E0D2;background:#fff}
+.item{padding:14px 18px;border-bottom:1px solid #E5E0D2;cursor:pointer;font-size:13px}.item:hover{background:#FAF8F2}.item.on{background:#FAF8F2;border-left:3px solid #B98A2F}
+.item b{font-family:monospace;color:#1F3A66}.item span{display:block;color:#8B94A7;font-size:11px;margin-top:3px;font-family:monospace}
+main{flex:1;padding:18px}iframe{width:100%;height:100%;border:1px solid #E5E0D2;border-radius:9px;background:#fff}
+.v{font-family:monospace;font-weight:600;color:#1F3A66;background:#F5EBD4;border:1px solid #E8D9B0;border-radius:5px;padding:1px 7px;font-size:12px}
+@media(max-width:760px){.wrap{flex-direction:column;height:auto}aside{width:100%}main{height:80vh}}</style></head><body>
+<header><h1>${esc(app.name)} · 隐私政策快照档案</h1><p>${ss.length} SNAPSHOTS · EXPORTED ${fmtT(Date.now())} · PRIVACY POLICY REGISTRY</p></header>
+<div class="wrap"><aside id="list"></aside><main><iframe id="fr" sandbox=""></iframe></main></div>
+<script type="application/json" id="data">${json}<\/script>
+<script>const D=JSON.parse(document.getElementById('data').textContent);const L=document.getElementById('list');
+D.snaps.slice().reverse().forEach((s,i)=>{const d=document.createElement('div');d.className='item'+(i===0?' on':'');
+d.innerHTML='<b class="v">V'+String(s.version).padStart(3,'0')+'</b> '+(s.source==='upload'?'本地上传':'在线抓取')+'<span>'+new Date(s.at).toLocaleString('zh-CN')+' · '+(s.size/1024).toFixed(1)+' KB</span>';
+d.onclick=()=>{document.querySelectorAll('.item').forEach(x=>x.classList.remove('on'));d.classList.add('on');document.getElementById('fr').srcdoc=s.content;};L.appendChild(d);});
+document.getElementById('fr').srcdoc=D.snaps[D.snaps.length-1].content;<\/script></body></html>`;}
+
+/* ================= 安全设置弹窗 ================= */
+function chgPassModal(){
+  openModal(`
+    <div class="modal-h"><h3>${ic('key',18)}修改登录密码</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+    <div class="modal-b">
+      <div class="field"><label>当前密码</label><input id="cp-cur" type="password" autocomplete="current-password"></div>
+      <div class="field"><label>新密码（至少 8 位）</label><input id="cp-new" type="password" autocomplete="new-password"></div>
+      <div class="field"><label>确认新密码</label><input id="cp-new2" type="password" autocomplete="new-password"></div>
+      <div class="field"><label>Authenticator 验证码</label><input id="cp-code" class="totp-input" style="font-size:18px;letter-spacing:8px" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></div>
+      <div class="form-err" id="cp-err"></div>
+    </div>
+    <div class="modal-f"><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="cp-ok">确认修改</button></div>`,
+  m=>{$('#cp-ok',m).addEventListener('click',async()=>{
+    const cur=$('#cp-cur',m).value,nw=$('#cp-new',m).value,nw2=$('#cp-new2',m).value,code=$('#cp-code',m).value,err=$('#cp-err',m);
+    if(nw.length<8){err.textContent='新密码至少 8 位';return;}
+    if(nw!==nw2){err.textContent='两次输入的新密码不一致';return;}
+    const rec=getAuth();const d=await derive(cur,rec.salt);
+    if(b64(d.verifier)!==rec.verifier){err.textContent='当前密码不正确';return;}
+    if(!await totpVerifyCode(ses.secret,code)){err.textContent='验证码不正确';return;}
+    await saveAuthRecord(nw,ses.secret);
+    await doLogin(nw);
+    logAct('safe','修改了登录密码');saveDb();closeModal();toast('密码已修改','ok');});});}
+function rebindModal(){
+  openModal(`
+    <div class="modal-h"><h3>${ic('qr',18)}重新绑定验证器</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+    <div class="modal-b">
+      <div class="field"><label>当前登录密码</label><input id="rb-pass" type="password" autocomplete="current-password"></div>
+      <div id="rb-step2" class="hide">
+        <p style="font-size:13px;color:var(--ink-2);margin-bottom:12px">已生成新密钥。请在 Microsoft Authenticator 中删除旧账户后，重新添加并扫描：</p>
+        <div class="qr-box"><div class="img" id="rb-qr"></div><div class="qr-fallback">若无法扫码，可选择「输入代码手动添加」：<b>账户名</b>任意，<b>密钥</b>使用下方 Secret，数字位数 6，刷新间隔 30 秒。</div></div>
+        <div class="secret-key" id="rb-secret"></div>
+        <div class="field" style="margin-top:14px"><label>输入 Authenticator 显示的 6 位验证码以完成绑定</label><input id="rb-code" class="totp-input" inputmode="numeric" maxlength="6" placeholder="000000"></div>
+      </div>
+      <div class="form-err" id="rb-err"></div>
+    </div>
+    <div class="modal-f"><button class="btn" data-close="1">取消</button><button class="btn btn-primary" id="rb-next">下一步</button></div>`,
+  m=>{
+    let newSecret=null;
+    $('#rb-next',m).addEventListener('click',async()=>{
+      const err=$('#rb-err',m);
+      if(newSecret){
+        if(!await totpVerifyCode(newSecret,$('#rb-code',m).value)){err.textContent='验证码不正确，请确认时间同步后重试';return;}
+        ses.secret=newSecret;
+        const rec=getAuth();rec.totp=await envEnc(ses.key,newSecret);
+        localStorage.setItem(AUTH_KEY,JSON.stringify(rec));
+        logAct('safe','重新绑定了验证器');saveDb();closeModal();toast('验证器已重新绑定','ok');return;}
+      const rec=getAuth();const d=await derive($('#rb-pass',m).value,rec.salt);
+      if(b64(d.verifier)!==rec.verifier){err.textContent='密码不正确';return;}
+      newSecret=b32e(CR.rand(20));
+      $('#rb-step2',m).classList.remove('hide');err.textContent='';
+      $('#rb-secret',m).textContent=newSecret.replace(/(.{4})/g,'$1 ').trim();
+      const btn=$('#rb-next',m);btn.textContent='完成绑定';
+      const uri=`otpauth://totp/${encodeURIComponent('隐私政策管理台')}:${encodeURIComponent('admin')}?secret=${newSecret}&issuer=${encodeURIComponent('隐私政策管理台')}&algorithm=SHA1&digits=6&period=30`;
+      const q=$('#rb-qr',m);
+      if(window.QRCode){new QRCode(q,{text:uri,width:150,height:150,correctLevel:QRCode.CorrectLevel.M});}
+      else{q.innerHTML='<div style="width:150px;height:150px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#8B94A7;text-align:center;padding:10px">二维码库加载失败<br>请使用左侧手动添加</div>';}
+    });});}
+
+/* ================= 登录 / 初始化界面 ================= */
+function ctxNote(){return CR.native?'':`<div class="note" style="margin-top:10px">当前为非安全上下文（HTTP），已自动启用内置加密后备实现，功能不受影响；正式部署建议通过 HTTPS 访问。</div>`;}
+function qrInto(el,uri){if(window.QRCode){new QRCode(el,{text:uri,width:158,height:158,correctLevel:QRCode.CorrectLevel.M});}
+  else{el.innerHTML='<div style="width:158px;height:158px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#8B94A7;text-align:center;padding:12px;border:1px dashed var(--line-2);border-radius:8px">二维码组件加载失败<br>请使用下方密钥手动添加</div>';}}
+function renderLogin(){
+  const card=$('#gate-card');
+  let fails=0;
+  card.innerHTML=`
+    <div class="gate-brand">
+      <svg width="44" height="44" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="#F6F4EC" font-family="Noto Serif SC,serif" font-weight="900">隐</text></svg>
+      <div><h1>隐私政策管理台</h1><div class="en">PRIVACY POLICY REGISTRY</div></div>
+    </div>
+    <p class="gate-sub">统一维护各端隐私政策 · 快照留存 · 版本追溯</p>
+    <form id="login-f">
+      <div class="field"><label>管理密码</label><input id="lg-pass" type="password" autocomplete="current-password" autofocus placeholder="请输入管理密码"></div>
+      <div class="form-err" id="lg-err"></div>
+      <button class="btn btn-primary btn-block" id="lg-ok" type="submit">${ic('lock',14)}解锁管理台</button>
+    </form>
+    <div class="gate-note">${ic('shield',12)} 密码经 PBKDF2 派生哈希校验；上传 / 下载 / 删除等敏感操作需通过 Microsoft Authenticator 六位动态码二次验证。数据仅保存在本浏览器。${ctxNote()}</div>`;
+  paintIcons(card);
+  const doSubmit=async()=>{
+    const until=lockGet('ppm.llock');const left=until-Date.now();
+    if(left>0){$('#lg-err').textContent=`尝试过于频繁，请 ${Math.ceil(left/1000)} 秒后重试`;return;}
+    const btn=$('#lg-ok');btn.disabled=true;btn.textContent='验证中…';
+    const ok=await doLogin($('#lg-pass').value);
+    if(ok){enterApp('登录管理台');}
+    else{fails++;$('#lg-err').textContent='密码不正确';$('#lg-pass').value='';$('#lg-pass').focus();
+      if(fails>=5){lockSet('ppm.llock',Date.now()+60000);fails=0;$('#lg-err').textContent='失败次数过多，已锁定 60 秒';}
+      btn.disabled=false;btn.innerHTML=`${ic('lock',14)}解锁管理台`;}};
+  $('#login-f').addEventListener('submit',e=>{e.preventDefault();doSubmit();});
+  $('#lg-pass').focus();}
+function renderWizard(){
+  const card=$('#gate-card');
+  const st={pass:'',secret:b32e(CR.rand(20))};
+  card.innerHTML=`
+    <div class="gate-brand">
+      <svg width="44" height="44" viewBox="0 0 44 44"><rect width="44" height="44" rx="9" fill="#B23B2E"/><text x="22" y="31" text-anchor="middle" font-size="23" fill="#F6F4EC" font-family="Noto Serif SC,serif" font-weight="900">隐</text></svg>
+      <div><h1>初始化管理台</h1><div class="en">PRIVACY POLICY REGISTRY</div></div>
+    </div>
+    <p class="gate-sub">首次使用：设置管理密码并绑定动态验证器</p>
+    <div class="steps"><span id="ws1" class="on">① 设置密码</span><span id="ws2">② 绑定验证器</span></div>
+    <div id="wz-1">
+      <div class="field"><label>设置管理密码（至少 8 位）</label><input id="wz-pass" type="password" autocomplete="new-password" placeholder="将用于每次登录"></div>
+      <div class="field"><label>确认密码</label><input id="wz-pass2" type="password" autocomplete="new-password" placeholder="再次输入"></div>
+      <div class="form-err" id="wz-err"></div>
+      <button class="btn btn-primary btn-block" id="wz-next" type="button">下一步：绑定验证器</button>
+    </div>
+    <div id="wz-2" class="hide">
+      <p style="font-size:13px;color:var(--ink-2);margin-bottom:14px">打开 <b>Microsoft Authenticator</b> → 添加账户 → <b>其他账户</b>，扫描下方二维码（或手动输入密钥）：</p>
+      <div class="qr-box"><div class="img" id="wz-qr"></div><div class="qr-fallback">无法扫码时可手动添加：<b>账户名</b>任意（如 admin），<b>密钥</b>见下方 Secret，6 位数字，30 秒刷新。</div></div>
+      <div style="text-align:center"><span style="font-size:11.5px;color:var(--ink-3)">Secret 密钥（点击复制）</span></div>
+      <div class="secret-key" id="wz-secret" title="点击复制" style="cursor:copy"></div>
+      <div class="field" style="margin-top:16px"><label>输入 Authenticator 显示的 6 位验证码完成绑定</label><input id="wz-code" class="totp-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"></div>
+      <div class="form-err" id="wz-err2"></div>
+      <button class="btn btn-primary btn-block" id="wz-done" type="button">验证并完成初始化</button>
+    </div>
+    <div class="gate-note">${ic('shield',12)} 密码以 PBKDF2（SHA-256，150,000 轮）派生存储，绝不明文保存；验证器密钥经认证加密封装存储。全部数据仅保存在当前浏览器。${ctxNote()}</div>`;
+  paintIcons(card);
+  const uri=`otpauth://totp/${encodeURIComponent('隐私政策管理台')}:${encodeURIComponent('admin')}?secret=${st.secret}&issuer=${encodeURIComponent('隐私政策管理台')}&algorithm=SHA1&digits=6&period=30`;
+  qrInto($('#wz-qr'),uri);
+  $('#wz-secret').textContent=st.secret.replace(/(.{4})/g,'$1 ').trim();
+  $('#wz-secret').addEventListener('click',()=>copyText(st.secret));
+  $('#wz-pass').focus();
+  $('#wz-next').addEventListener('click',()=>{
+    const p=$('#wz-pass').value,p2=$('#wz-pass2').value;
+    if(p.length<8){$('#wz-err').textContent='密码至少 8 位';return;}
+    if(p!==p2){$('#wz-err').textContent='两次输入的密码不一致';return;}
+    st.pass=p;$('#wz-err').textContent='';
+    $('#wz-1').classList.add('hide');$('#wz-2').classList.remove('hide');
+    $('#ws1').classList.remove('on');$('#ws2').classList.add('on');
+    $('#wz-code').focus();});
+  $('#wz-code').addEventListener('input',e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,6));
+  $('#wz-done').addEventListener('click',async()=>{
+    const btn=$('#wz-done');btn.disabled=true;btn.textContent='验证中…';
+    if(!await totpVerifyCode(st.secret,$('#wz-code').value)){
+      $('#wz-err2').textContent='验证码不正确，请确认手机时间同步后重试';
+      btn.disabled=false;btn.textContent='验证并完成初始化';return;}
+    await saveAuthRecord(st.pass,st.secret);
+    await doLogin(st.pass);
+    enterApp('完成初始化并进入管理台');});}
+function enterApp(actText){
+  $('#gate').classList.add('hide');$('#shell').classList.remove('hide');
+  logAct('safe',actText);saveDb();
+  render();maybeCheckAll();}
+
+/* ================= 事件绑定 ================= */
+document.addEventListener('click',e=>{
+  if(e.target.closest('a[href]'))return;
+  const act=e.target.closest('[data-act]');
+  if(act){const fn=ACT[act.dataset.act];if(fn){e.stopPropagation();fn(act.dataset);return;}}
+  const go=e.target.closest('[data-go]');
+  if(go){nav(go.dataset.go);return;}
+  const open=e.target.closest('[data-open-app]');
+  if(open){nav('#/app/'+open.dataset.openApp);return;}});
+document.addEventListener('change',e=>{
+  const selInp=e.target.closest('[data-sel-snap]');
+  if(selInp){const id=selInp.dataset.selSnap;
+    if(selInp.checked){if(sel.size>=2){toast('最多选择两个版本进行对比','err');selInp.checked=false;return;}sel.add(id);}
+    else sel.delete(id);
+    render();return;}
+  if(e.target.id==='file-in'&&e.target.files.length)handleUpload(e.target.files[0]);
+  if(e.target.id==='imp-in'&&e.target.files.length)handleImport(e.target.files[0]);
+  if(e.target.id==='flt-app'){snapFilterApp=e.target.value;sel.clear();render();}
+  if(e.target.id==='flt-src'){snapFilterSrc=e.target.value;sel.clear();render();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.activeElement&&document.activeElement.classList.contains('totp-input')){
+    const m=document.activeElement.closest('.mask');
+    const btn=m&&m.querySelector('#gate-ok,#wz-done,#rb-next');if(btn)btn.click();}});
+async function handleUpload(file){
+  const app=db.apps.find(a=>a.id===pendingUpload);pendingUpload=null;
+  if(!app){toast('上传会话已失效，请重试','err');return;}
+  if(!/\.html?$/i.test(file.name)){toast('仅支持 .html / .htm 文件','err');return;}
+  const content=await file.text();
+  if(!content.trim()){toast('文件内容为空','err');return;}
+  const v=await createSnapshot(app,content,'upload');
+  toast(`已上传并生成快照 V${String(v).padStart(3,'0')}`,'ok');
+  const dom=db.settings.domain;
+  if(dom){const pub=`${dom.replace(/\/+$/,'')}/${slugOf(app)}/privacy.html`;
+    openModal(`
+      <div class="modal-h"><h3>${ic('upload',18)}上传成功 · 快照 V${String(v).padStart(3,'0')}</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+      <div class="modal-b">
+        <p style="font-size:13.5px;color:var(--ink-2);line-height:1.9">快照已存档。请将此 HTML 文件部署到自定义域名路径，使线上内容与存档一致：</p>
+        <div class="secret-key" style="cursor:copy" id="pub-path" title="点击复制">${esc(pub)}</div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:14px;cursor:pointer">
+          <input type="checkbox" id="pub-upd" checked style="accent-color:var(--navy)">同时将该应用的在线链接更新为上述发布路径
+        </label>
+      </div>
+      <div class="modal-f"><button class="btn" data-close="1">稍后部署</button><button class="btn btn-primary" id="pub-ok">保存</button></div>`,
+    m=>{
+      $('#pub-path',m).addEventListener('click',()=>copyText(pub));
+      $('#pub-ok',m).addEventListener('click',()=>{
+        if($('#pub-upd',m).checked){app.url=pub;logAct('set',`「${app.name}」在线链接已更新为发布路径`);}
+        saveDb();closeModal();render();toast('已完成','ok');});});}
+  else render();}
+async function handleImport(file){
+  try{
+    const obj=JSON.parse(await file.text());
+    if(obj.v!==1||!Array.isArray(obj.apps)||!Array.isArray(obj.snapshots))throw new Error('format');
+    const mode=await new Promise(res=>{
+      openModal(`
+        <div class="modal-h"><h3>${ic('upload',18)}导入备份</h3><button class="x-btn" data-close="1">${ic('x')}</button></div>
+        <div class="modal-b"><p style="font-size:13.5px;color:var(--ink-2);line-height:1.9">备份包含 <b>${obj.apps.length}</b> 个应用、<b>${obj.snapshots.length}</b> 份快照。请选择导入方式：</p></div>
+        <div class="modal-f"><button class="btn" id="im-mg">合并导入</button><button class="btn btn-danger" id="im-rp">覆盖现有数据</button></div>`,
+      m=>{$('#im-mg',m).addEventListener('click',()=>{closeModal();res('merge');});
+          $('#im-rp',m).addEventListener('click',()=>{closeModal();res('replace');});});});
+    if(!mode)return;
+    if(mode==='replace'){db.apps=obj.apps;db.snapshots=obj.snapshots;db.settings=obj.settings||db.settings;db.activity=obj.activity||[];}
+    else{const idmap={};
+      for(const a of obj.apps){if(db.apps.some(x=>x.id===a.id)){const nid=uid();idmap[a.id]=nid;a.id=nid;}db.apps.push(a);}
+      for(const s of obj.snapshots){if(idmap[s.appId])s.appId=idmap[s.appId];if(db.snapshots.some(x=>x.id===s.id))s.id=uid();db.snapshots.push(s);}}
+    logAct('set',`导入了备份（${mode==='merge'?'合并':'覆盖'}）：${obj.apps.length} 个应用 / ${obj.snapshots.length} 份快照`);
+    saveDb();render();toast('备份已导入','ok');
+  }catch(e){toast('备份文件无效或已损坏','err');}}
+
+/* ================= 启动 ================= */
+function tick(){const c=$('#clock');if(c)c.textContent=fmtT(Date.now());}
+function init(){
+  loadDb();paintIcons();
+  const rec=getAuth();
+  if(!rec)renderWizard();else renderLogin();
+  setInterval(tick,1000);tick();
+  window.addEventListener('hashchange',()=>{sel.clear();render();});}
+init();
+</script>
+</body>
+</html>
